@@ -1,14 +1,14 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-class CreateDto {
+class CreateSocialDto {
   @IsString()
   @IsNotEmpty()
   url: string;
 
   @IsString()
   @IsOptional()
-  icon: string;
+  icon?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -19,6 +19,6 @@ class CreateDto {
   value: string;
 }
 
-class UpdateDto extends PartialType(CreateDto) {}
+class UpdateSocialDto extends PartialType(CreateSocialDto) {}
 
-export { CreateDto, UpdateDto };
+export { CreateSocialDto, UpdateSocialDto };

@@ -9,18 +9,20 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JobService } from './service';
-import { CreateDto, UpdateDto } from './dto';
+import { CreateJobDto, UpdateJobDto } from './dto';
 import { GetUser } from '@app/shared/decorator';
 import { JwtGuard } from '../auth/guard';
 import { GetJobPipe } from './pipe';
 import { Job } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @UseGuards(JwtGuard)
 @Controller('job')
 export class JobController {
   constructor(private readonly service: JobService) {}
   @Post('')
-  async create(@Body() data: CreateDto, @GetUser('id') userId: string) {
+  async create(@Body() data: CreateJobDto, @GetUser('id') userId: string) {
     // const { role, description, value } = data;
     return this.service.create({
       ...data,
@@ -43,7 +45,7 @@ export class JobController {
   @Patch(':id')
   async update(
     @Param('id', GetJobPipe) job: Job,
-    @Body() updateProjectDto: UpdateDto,
+    @Body() updateProjectDto: UpdateJobDto,
     @GetUser('id') userId: string,
   ) {
     return await this.service.update({

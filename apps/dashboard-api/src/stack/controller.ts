@@ -10,17 +10,44 @@ import {
 } from '@nestjs/common';
 import { StackService } from './service';
 import { GetUser } from '@app/shared/decorator';
-import { CreateDto, UpdateDto } from './dto';
+import { CreateStackDto, UpdateStackDto } from './dto';
 import { Stack } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
 import { GetStackPipe } from './pipe';
+import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 
+const apiBody = {
+  schema: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        example: 'Nest.js',
+        description: 'The name of the social media',
+      },
+      jobId: {
+        type: 'number',
+        example: 1,
+        description: 'Job ID for the stack',
+      },
+      icon: {
+        type: 'string',
+        example: 'logos:nestjs',
+        description: 'The name of icon for the stack using Iconify',
+      },
+    },
+  },
+};
+
+@ApiBearerAuth()
 @UseGuards(JwtGuard)
 @Controller('stack')
 export class StackController {
   constructor(private readonly service: StackService) {}
+
+  @ApiBody(apiBody)
   @Post('')
-  async create(@Body() data: CreateDto, @GetUser('id') userId: string) {
+  async create(@Body() data: CreateStackDto, @GetUser('id') userId: string) {
     // const { role, description, value } = data;
     return this.service.create({
       ...data,
@@ -43,10 +70,11 @@ export class StackController {
     return this.service.stack({ id: stack.id, userId });
   }
 
+  @ApiBody(apiBody)
   @Patch(':id')
   async update(
     @Param('id', GetStackPipe) stack: Stack,
-    @Body() data: UpdateDto,
+    @Body() data: UpdateStackDto,
     @GetUser('id') userId: string,
   ) {
     return await this.service.update({

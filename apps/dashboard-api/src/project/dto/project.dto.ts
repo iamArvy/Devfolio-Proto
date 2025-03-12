@@ -7,7 +7,7 @@ import {
   IsString,
 } from 'class-validator';
 
-class CreateDto {
+class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -33,6 +33,6 @@ class CreateDto {
   jobId: number;
 }
 
-class UpdateDto extends PartialType(CreateDto) {}
+class UpdateProjectDto extends PartialType(CreateProjectDto) {}
 
-export { CreateDto, UpdateDto };
+export { CreateProjectDto, UpdateProjectDto };

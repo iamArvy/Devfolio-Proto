@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-class CreateDto {
+class CreateStackDto {
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -15,6 +15,6 @@ class CreateDto {
   icon?: string;
 }
 
-class UpdateDto extends PartialType(CreateDto) {}
+class UpdateStackDto extends PartialType(CreateStackDto) {}
 
-export { CreateDto, UpdateDto };
+export { CreateStackDto, UpdateStackDto };

@@ -12,16 +12,17 @@ import { ContactService } from './service';
 import { GetUser } from '@app/shared/decorator';
 import { Contact } from '@prisma/client';
 import { JwtGuard } from '../auth/guard';
-import { CreateDto, UpdateDto } from './dto';
+import { CreateContactDto, UpdateContactDto } from './dto';
 import { GetContactPipe } from './pipe';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth()
 @UseGuards(JwtGuard)
 @Controller('contact')
 export class ContactController {
   constructor(private readonly service: ContactService) {}
-
   @Post('')
-  async create(@Body() data: CreateDto, @GetUser('id') userId: string) {
+  async create(@Body() data: CreateContactDto, @GetUser('id') userId: string) {
     // const { role, description, value } = data;
     return this.service.create({
       ...data,
@@ -47,7 +48,7 @@ export class ContactController {
   @Patch(':id')
   async update(
     @Param('id', GetContactPipe) contact: Contact,
-    @Body() updateProjectDto: UpdateDto,
+    @Body() updateProjectDto: UpdateContactDto,
     @GetUser('id') userId: string,
   ) {
     return await this.service.update({

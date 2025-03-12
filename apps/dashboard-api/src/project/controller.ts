@@ -12,7 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ProjectService } from './service';
-import { CreateDto, UpdateDto } from './dto';
+import { CreateProjectDto, UpdateProjectDto } from './dto';
 import { GetUser } from '@app/shared/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '@app/shared/storage';
@@ -20,7 +20,48 @@ import { Project } from '@prisma/client';
 import { GetProjectPipe } from './pipe/get-project.pipe';
 import { JwtGuard } from '../auth/guard';
 import { JobService } from '../job/service';
+import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 
+const apiBody = {
+  schema: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        example: 'Portfolio Dashboard API',
+        description: 'The name of the project',
+      },
+      description: {
+        type: 'string',
+        example: 'Am API for a portfolio dashboard application',
+        description: 'The description of the project',
+      },
+      live: {
+        type: 'string',
+        example: 'https://livepreview.com',
+        description: 'Link to the live preview of the project',
+      },
+      repo: {
+        type: 'string',
+        example: 'https://github.io/iamArvy/portfolio-backend',
+        description: 'The link to the project repository',
+      },
+      stack: {
+        type: 'array',
+        example: ['Nest.js', 'Typescript'],
+        description: 'the list stacks used in creating the project',
+      },
+      jobId: {
+        type: 'number',
+        example: 1,
+        description: 'The ID for the Job role',
+      },
+      image: { type: 'string', format: 'binary' },
+    },
+  },
+};
+
+@ApiBearerAuth()
 @UseGuards(JwtGuard)
 @Controller('project')
 export class ProjectController {
@@ -30,10 +71,12 @@ export class ProjectController {
     private job: JobService,
   ) {}
 
+  @ApiConsumes('multipart/form-data')
   @Post('')
   @UseInterceptors(FileInterceptor('image'))
+  @ApiBody(apiBody)
   async create(
-    @Body() data: CreateDto,
+    @Body() data: CreateProjectDto,
     @GetUser('id') userId: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
@@ -75,11 +118,13 @@ export class ProjectController {
     return this.service.project({ id: project.id, userId });
   }
 
+  @ApiConsumes('multipart/form-data')
+  @ApiBody(apiBody)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image'))
   async update(
     @Param('id', GetProjectPipe) project: Project,
-    @Body() data: UpdateDto,
+    @Body() data: UpdateProjectDto,
     @GetUser('id') userId: string,
     @UploadedFile() image: Express.Multer.File,
   ) {
