@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev # Use the dev Dockerfile
+    container_name: my-nest-app
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/usr/src/app # Mount local files for live reload
+      - /usr/src/app/node_modules # Prevent overwriting node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run start:dev

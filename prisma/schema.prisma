@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  image        String?
+  about        String?
+  contact      Contact[]
+  socials      Social[]
+  job          Job[]
+  stack        Stack[]
+  projects     Project[]
+  clientId     String?   @unique
+  client       Client?
+  password     String
+  refreshToken String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Client {
+  id     String  @id @default(cuid())
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+  secret String
+
+  @@map("clients")
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  url       String?
+  icon      String?
+  name      String
+  value     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
+  @@map("contacts")
+}
+
+model Social {
+  id        Int      @id @default(autoincrement())
+  url       String
+  icon      String?
+  name      String
+  value     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
+  @@map("socials")
+}
+
+model Job {
+  id          Int       @id @default(autoincrement())
+  role        String    @unique
+  description String?
+  value       String?
+  stack       Stack[]
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Project     Project[]
+
+  @@unique([role, userId])
+  @@map("jobs")
+}
+
+model Stack {
+  id        Int       @id @default(autoincrement())
+  name      String
+  jobId     Int?
+  icon      String?
+  userId    String
+  job       Job?      @relation(fields: [jobId], references: [id])
+  project   Project[]
+  user      User?     @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([name, userId])
+  @@map("stacks")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  name        String
+  image       String?
+  description String
+  live        String?
+  repo        String?
+  jobId       Int?
+  userId      String?
+  stack       Stack[]
+  job         Job?     @relation(fields: [jobId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, userId])
+  @@map("projects")
+}
