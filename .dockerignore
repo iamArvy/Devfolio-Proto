@@ -6,7 +6,7 @@ yarn-error.log
 pnpm-debug.log
 
 # Ignore local development files
-.env
+# .env
 .env.local
 .env.development
 .env.production
@@ -23,9 +23,9 @@ logs/
 log/
 
 # Ignore build files (if using a multi-stage build)
-dist/
-.cache/
-.out/
+# dist/
+# .cache/
+# .out/
 
 # Ignore Docker-related files
 docker-compose.yml

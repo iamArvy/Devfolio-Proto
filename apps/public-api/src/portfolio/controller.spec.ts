@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PublicApiController } from './public-api.controller';
-import { PublicApiService } from './public-api.service';
+import { PublicApiController } from './controller';
+import { PublicApiService } from './service';
 
 describe('PublicApiController', () => {
   let publicApiController: PublicApiController;

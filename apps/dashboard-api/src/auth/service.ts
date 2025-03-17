@@ -28,7 +28,6 @@ export class AuthService {
     type: 'refresh' | 'access',
   ): Promise<string> {
     const payload = { sub, email };
-    console.log(payload);
     const secret: string =
       this.config.get(type === 'refresh' ? 'REFRESH_SECRET' : 'JWT_SECRET') ||
       '';
