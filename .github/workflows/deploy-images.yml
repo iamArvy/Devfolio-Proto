@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Dependencies
-        run: npm install --only=production --omit=dev
+        run: npm install
 
       - name: Install Nest
         run: npm install -g @nestjs/cli
