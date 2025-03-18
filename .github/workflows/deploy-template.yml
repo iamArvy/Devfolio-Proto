@@ -61,6 +61,6 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         id: build-image
         run: |
-          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG --build-arg SERVICE=${{ inputs.APP_NAME }} .
+          docker build -t $REGISTRY/$REPOSITORY:latest --build-arg SERVICE=${{ inputs.APP_NAME }} .
           docker push $REGISTRY/$REPOSITORY:latest
           echo "image=$REGISTRY/$REPOSITORY:latest" >> $GITHUB_OUTPUT
