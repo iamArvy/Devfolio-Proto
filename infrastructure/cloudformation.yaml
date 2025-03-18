@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: <your stack description here>
+
+# Parameters:
+  # RepositoryCount:
+  #   Type: Number
+  #   Default: 2
+  #   Description: "Number of ECR repositories to create"
+
+  # RepositoryNames:
+  #   Type: CommaDelimitedList
+  #   Default: "portfolio-dashboard-api,portfolio-api"
+  #   Description: "Comma-separated list of ECR repository names"
+Resources:
+  ECRStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ecr.yml
+      Parameters:
+        RepositoryCount: !Ref RepositoryCount
+        RepositoryNames: !Ref RepositoryNames
+  
+
+  
+
+  

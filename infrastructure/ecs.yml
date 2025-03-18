@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::LanguageExtensions
+
+Parameters:
+  PortfolioDashboardRepositoryUri:
+    Type: String
+    Description: URI for the Portfolio Dashboard repository
+  PortfolioApiRepositoryUri:
+    Type: String
+    Description: URI for the Portfolio API repository
+  ALBTargetGroupService1:
+    Type: String
+    Description: ALB Target Group for Service 1
+  ALBTargetGroupService2:
+    Type: String
+    Description: ALB Target Group for Service 2
+    
+Resources:
+  ECSCluster:
+      Type: AWS::ECS::Cluster
+      Properties:
+        ClusterName: !Sub ${AWS::StackName}-Cluster
+
+  ECSTaskDefinitionService1:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: portfolio-dashboard-task
+      RequiresCompatibilities:
+        - EC2
+      Memory: '512'
+      Cpu: '256'
+      ContainerDefinitions:
+        - Name: portfolio-dashboard
+          Image: !Ref "${PortfolioDashboardRepositoryUri}:latest"
+          PortMappings:
+            - ContainerPort: 3000
+
+  ECSTaskDefinitionService2:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: portfolio-api-task
+      RequiresCompatibilities:
+        - EC2
+      Memory: '512'
+      Cpu: '256'
+      ContainerDefinitions:
+        - Name: portfolio-api
+          Image: !Sub "${PortfolioApiRepositoryUri}:latest"
+          PortMappings:
+            - ContainerPort: 3000
+
+  ECSServiceService1:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ECSTaskDefinitionService1
+      DesiredCount: 1
+      LaunchType: EC2
+      LoadBalancers:
+        - TargetGroupArn: !Ref ALBTargetGroupService1
+          ContainerName: portfolio-dashboard
+          ContainerPort: 3000
+
+  ECSServiceService2:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ECSTaskDefinitionService2
+      DesiredCount: 1
+      LaunchType: EC2
+      LoadBalancers:
+        - TargetGroupArn: !Ref ALBTargetGroupService2
+          ContainerName: portfolio-api
+          ContainerPort: 3000

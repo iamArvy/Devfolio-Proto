@@ -1,0 +1,37 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  RepositoryNames:
+    Type: CommaDelimitedList
+    Description: List of repository names to create
+
+Resources:
+
+  Network:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub network.yml
+      
+  ECRRepositories:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ecr.yml
+      Parameters:
+        RepositoryNames: !Join
+          - ','
+          - !Ref RepositoryNames
+
+  ECSSetup:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ecs.yml
+      Parameters:
+        PortfolioDashboardRepositoryUri: !GetAtt ECRRepositories.Outputs.PortfolioDashboardRepositoryUri
+        PortfolioApiRepositoryUri: !GetAtt ECRRepositories.Outputs.PortfolioApiRepositoryUri
+
+  
+Outputs:
+  RepositoryURIs:
+    Description: ECR URIs for all created repositories
+    Value: !GetAtt ECRRepositories.Outputs.RepositoryURIs
+    Export:
+      Name: !Sub ${AWS::StackName}-RepositoryURIs

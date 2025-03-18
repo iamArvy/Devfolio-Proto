@@ -1,12 +1,21 @@
-AWSTemplateFormatVersion: '2010-09-09'
-
-Description: <your stack description here>
-
+Parameters:
+  CidrBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: VPC CIDR block
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: Public subnet CIDR block
+  PrivateSubnetCidr:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: Private subnet CIDR block
 Resources:
   MyVpc:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref CidrBlock
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
@@ -16,7 +25,7 @@ Resources:
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: !Ref PublicSubnetCidr
       VpcId: !Ref MyVpc
       Tags:
         - Key: Name
@@ -25,7 +34,7 @@ Resources:
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: 172.16.1.0/24
+      CidrBlock: !Ref PrivateSubnetCidr
       VpcId: !Ref MyVpc
       Tags:
         - Key: Name
@@ -132,105 +141,6 @@ Resources:
       GroupId: !Ref ECSSecurityGroup
       IpProtocol: tcp
       FromPort: 3000
-      ToPort: 3001
+      ToPort: 3000
       SourceSecurityGroupId: !Ref ALBSecurityGroup
       Description: Allow ALB to access ECS
-
-  # Application Load Balancer
-  ApplicationLoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub ${AWS::StackName}-ALB
-      Type: application
-      SecurityGroups:
-        - !Ref ALBSecurityGroup
-      Subnets:
-        - !Ref PublicSubnet
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-ALB
-
-  ALBTargetGroupService1:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: Service1-TG
-      VpcId: !Ref MyVpc
-      Protocol: HTTP
-      Port: 3000
-      TargetType: ip
-
-  ALBTargetGroupService2:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: Service2-TG
-      VpcId: !Ref MyVpc
-      Protocol: HTTP
-      Port: 3001
-      TargetType: ip
-
-  ALBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupService1
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 80
-      Protocol: HTTP
-
-  ECSCluster:
-    Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: !Sub ${AWS::StackName}-Cluster
-
-  ECSTaskDefinitionService1:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: service1-task
-      RequiresCompatibilities:
-        - EC2
-      Memory: '512'
-      Cpu: '256'
-      ContainerDefinitions:
-        - Name: service1
-          Image: <docker-image-service1>
-          PortMappings:
-            - ContainerPort: 3000
-
-  ECSTaskDefinitionService2:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: service2-task
-      RequiresCompatibilities:
-        - EC2
-      Memory: '512'
-      Cpu: '256'
-      ContainerDefinitions:
-        - Name: service2
-          Image: <docker-image-service2>
-          PortMappings:
-            - ContainerPort: 3001
-
-  ECSServiceService1:
-    Type: AWS::ECS::Service
-    Properties:
-      Cluster: !Ref ECSCluster
-      TaskDefinition: !Ref ECSTaskDefinitionService1
-      DesiredCount: 1
-      LaunchType: EC2
-      LoadBalancers:
-        - TargetGroupArn: !Ref ALBTargetGroupService1
-          ContainerName: service1
-          ContainerPort: 3000
-
-  ECSServiceService2:
-    Type: AWS::ECS::Service
-    Properties:
-      Cluster: !Ref ECSCluster
-      TaskDefinition: !Ref ECSTaskDefinitionService2
-      DesiredCount: 1
-      LaunchType: EC2
-      LoadBalancers:
-        - TargetGroupArn: !Ref ALBTargetGroupService2
-          ContainerName: service2
-          ContainerPort: 3001

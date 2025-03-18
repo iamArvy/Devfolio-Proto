@@ -1,0 +1,42 @@
+Resources:
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${AWS::StackName}-ALB
+      Type: application
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets:
+        - !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-ALB
+
+  ALBTargetGroupService1:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: Service1-TG
+      VpcId: !Ref MyVpc
+      Protocol: HTTP
+      Port: 3000
+      TargetType: ip
+
+  ALBTargetGroupService2:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: Service2-TG
+      VpcId: !Ref MyVpc
+      Protocol: HTTP
+      Port: 3001
+      TargetType: ip
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupService1
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
