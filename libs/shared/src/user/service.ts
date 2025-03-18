@@ -1,5 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { handlePrismaError } from '../../../../apps/dashboard-api/src/common/utils';
+import { handlePrismaError } from '../../../../apps/main/src/common/utils';
 import { Injectable } from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 

@@ -1,0 +1,17 @@
+name: Deploy Portfolio Dashboard
+
+on:
+  push:
+    paths:
+      - 'apps/main/**'
+    branches:
+      - main
+
+jobs:
+  deploy-dashboard:
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      APP_NAME: main
+    secrets:
+      AWS_ROLE: ${{ secrets.AWS_ROLE }}
+      REPOSITORY: portfolio-dashboard-repository
