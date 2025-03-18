@@ -49,8 +49,15 @@ jobs:
       - name: Install Dependencies
         run: npm install --only=production --omit=dev
 
+      - name: Install Nest
+        run: npm install -g @nestjs/cli
+
       - name: Build Nest App
         run: npm run build ${{env.APP_NAME}}
+
+      - name: Create .env File
+        run: |
+          [ -f .env ] || cp .env.example .env
 
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v1
@@ -68,6 +75,6 @@ jobs:
           # Build a docker container and
           # push it to ECR so that it can
           # be deployed to ECS.
-          docker build -t ${{ vars.ECR_URI }}:latest .
+          docker build -t ${{ vars.ECR_URI }}:latest --build-arg SERVICE=${{ env.APP_NAME }} .
           docker push ${{ vars.ECR_URI }}:latest
           echo "image=${{ vars.ECR_URI }}:latest" >> $GITHUB_OUTPUT
