@@ -37,4 +37,5 @@ import { UserModule } from '@app/shared/user';
     },
   ],
 })
+// Test
 export class AppModule {}
