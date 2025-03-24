@@ -11,8 +11,9 @@ Parameters:
     Type: String
     Default: 10.0.2.0/24
     Description: Private subnet CIDR block
+
 Resources:
-  MyVpc:
+  VPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref CidrBlock
@@ -26,7 +27,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       CidrBlock: !Ref PublicSubnetCidr
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PublicSubnet
@@ -35,7 +36,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       CidrBlock: !Ref PrivateSubnetCidr
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PrivateSubnet
@@ -51,12 +52,12 @@ Resources:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
 
   RouteTablePublic:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PublicRouteTable
@@ -94,7 +95,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for ECS
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       SecurityGroupIngress: []
       Tags:
         - Key: Name
@@ -104,7 +105,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for RDS
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       SecurityGroupIngress: []
       Tags:
         - Key: Name
@@ -114,7 +115,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: ALB Security Group
-      VpcId: !Ref MyVpc
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: tcp
@@ -124,23 +125,12 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALBSecurityGroup
+  
 
-  ECSToRDSIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref RDSSecurityGroup
-      IpProtocol: tcp
-      FromPort: 5432
-      ToPort: 5432
-      SourceSecurityGroupId: !Ref ECSSecurityGroup
-      Description: Allow ECS to access RDS
-
-  ALBToECSIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref ECSSecurityGroup
-      IpProtocol: tcp
-      FromPort: 3000
-      ToPort: 3000
-      SourceSecurityGroupId: !Ref ALBSecurityGroup
-      Description: Allow ALB to access ECS
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+  PublicSubnet:
+      Value: !Ref PublicSubnet
+  PrivateSubnet:
+      Value: !Ref PrivateSubnet

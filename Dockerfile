@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:23-alpine
 
 WORKDIR /usr/src/app
 
@@ -11,7 +11,7 @@ COPY prisma ./prisma
 RUN npx prisma generate
 
 COPY libs ./libs
-COPY .env .env
+# COPY .env .env
 
 ARG SERVICE
 RUN echo "Building service: $SERVICE"

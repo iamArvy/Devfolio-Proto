@@ -1,11 +1,12 @@
 name: Deploy Portfolio Dashboard
 
 on:
-  push:
-    paths:
-      - 'apps/main/**'
-    branches:
-      - main
+  # push:
+  #   paths:
+  #     - 'apps/api-gateway/**'
+  #   branches:
+  #     - main
+  workflow_dispatch:
 
 permissions:
   id-token: write

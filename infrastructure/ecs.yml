@@ -72,3 +72,13 @@ Resources:
         - TargetGroupArn: !Ref ALBTargetGroupService2
           ContainerName: portfolio-api
           ContainerPort: 3000
+
+  ALBToECSIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ECSSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3000
+      ToPort: 3000
+      SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Description: Allow ALB to access ECS

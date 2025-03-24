@@ -1,35 +1,85 @@
 services:
-  portfolio-dashboard-api:
+  api-gateway:
     build:
       context: .
       args:
-        SERVICE: 'main'
+        SERVICE: 'api-gateway'
     ports:
       - '3000:3000'
-    container_name: portfolio-dashboard-api
+    depends_on:
+      - auth-service
+      - dashboard-service
+      # - api-service
+    environment:
+      AUTH_SERVICE_URL: 'http://devfolio-auth-service:3000/auth'
+      USER_SERVICE_URL: 'http://devfolio-auth-service:3000/user'
+      DASHBOARD_SERVICE_URL: 'http://devfolio-dashboard-service:3000'
+      # API_SERVICE_URL: 'http://devfolio-api-service:3000'
+    networks:
+      - devfolio-network
+    container_name: devfolio-api-gateway
+
+  auth-service:
+    build:
+      context: .
+      args:
+        SERVICE: 'auth'
     depends_on:
       - db
+    environment:
+      JWT_SECRET: 'my-secret'
+      REFRESH_SECRET: 'my-refresh-secret'
+      DATABASE_URL: 'postgres://user:password@db:5432/devfoliodb'
     networks:
-      - portfolio-network
-    command: ['node', 'main.js']
+      - devfolio-network
+    container_name: devfolio-auth-service
+
+  dashboard-service:
+    build:
+      context: .
+      args:
+        SERVICE: 'dashboard'
+    depends_on:
+      - db
+    environment:
+      JWT_SECRET: 'my-secret'
+      REFRESH_SECRET: 'my-refresh-secret'
+      DATABASE_URL: 'postgres://user:password@db:5432/devfoliodb'
+    networks:
+      - devfolio-network
+    container_name: devfolio-dashboard-service
+
+  # api-service:
+  #   build:
+  #     context: .
+  #     args:
+  #       SERVICE: 'api'
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     DATABASE_URL: 'postgres://user:password@db:5432/devfoliodb'
+  #   networks:
+  #     - devfolio-network
+  #   container_name: devfolio-container-service
 
   db:
     image: postgres:latest
-    container_name: portfolio-db
+    container_name: devfolio-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
+      POSTGRES_DB: devfoliodb
     ports:
       - '5432:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
-      - portfolio-network
+      - devfolio-network
 
 volumes:
   db-data:
 
 networks:
-  portfolio-network:
+  devfolio-network:
+    driver: bridge

@@ -1,17 +1,39 @@
+Parameter:
+  VPC:
+    Type: "AWS::EC2::VPC::Id"
+  PublicSubnet:
+    Type: "AWS::EC2::Subnet::Id"
+  ALBSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup::Id"
 Resources:
   # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub ${AWS::StackName}-ALB
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '30'
       Type: application
       SecurityGroups:
-        - !Ref ALBSecurityGroup
+        - !Ref LoadBalancerSG
       Subnets:
         - !Ref PublicSubnet
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALB
+
+  LoadBalancerSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Access to the public facing load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+          FromPort: 80
+          ToPort: 80
 
   ALBTargetGroupService1:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -28,7 +50,7 @@ Resources:
       Name: Service2-TG
       VpcId: !Ref MyVpc
       Protocol: HTTP
-      Port: 3001
+      Port: 3000
       TargetType: ip
 
   ALBListener:

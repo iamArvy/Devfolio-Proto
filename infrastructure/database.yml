@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  VPC:
+    Type: AWS::EC2::VPC::Id
+  Subnet1:
+    Type: AWS::EC2::Subnet::Id
+  Subnet2:
+    Type: AWS::EC2::Subnet::Id
+  DBName:
+    Type: String
+    Default: "portfolio"
+  DBUser:
+    Type: String
+    Default: "portfolio"
+  DBPassword:
+    Type: String
+    NoEcho: true
+  DBEngine:
+    Type: String
+    Default: "postgres"
+  DBVersion:
+    Type: String
+    Default: "15.3"
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+  EnableIAMAuth:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+
+Resources:
+  RDSPostgresDB:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceIdentifier: "portfolio-db"
+      DBName: !Ref DBName
+      Engine: !Ref DBEngine
+      EngineVersion: !Ref DBVersion
+      DBInstanceClass: "db.t3.micro"
+      AllocatedStorage: 20
+      StorageType: "gp2"
+      MultiAZ: false
+      PubliclyAccessible: false
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
+      EnableIAMDatabaseAuthentication: !Ref EnableIAMAuth
+      VPCSecurityGroups:
+        - !GetAtt RDSPostgresSecurityGroup.GroupId
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      BackupRetentionPeriod: 7
+
+  RDSPostgresSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Security group for RDS PostgreSQL"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: "tcp"
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref ECSSecurityGroup
+
+  RDSSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS"
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
+
+  ParameterStoreUsername:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /rds/db/username
+      Type: String
+      Value: !Ref DBUser
+      Description: RDS database username
+
+  ParameterStorePassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /rds/db/password
+      Type: SecureString
+      Value: !Ref DBPassword
+      Description: RDS database password
+
+Outputs:
+  RDSPostgresEndpoint:
+    Description: "PostgreSQL database endpoint"
+    Value: !GetAtt RDSPostgresDB.Endpoint.Address
