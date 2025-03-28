@@ -1,12 +1,11 @@
 Parameter:
   VPC:
     Type: "AWS::EC2::VPC::Id"
-  PublicSubnet:
+  Subnet1:
     Type: "AWS::EC2::Subnet::Id"
-  ALBSecurityGroup:
-    Type: "AWS::EC2::SecurityGroup::Id"
+  Subnet2:
+    Type: "AWS::EC2::Subnet::Id"
 Resources:
-  # Application Load Balancer
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -19,7 +18,8 @@ Resources:
       SecurityGroups:
         - !Ref LoadBalancerSG
       Subnets:
-        - !Ref PublicSubnet
+        - !Ref Subnet1
+        - !Ref Subnet2
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALB
@@ -28,37 +28,22 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId: !Ref VpcId
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
-          IpProtocol: -1
+          IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-
-  ALBTargetGroupService1:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: Service1-TG
-      VpcId: !Ref MyVpc
-      Protocol: HTTP
-      Port: 3000
-      TargetType: ip
-
-  ALBTargetGroupService2:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: Service2-TG
-      VpcId: !Ref MyVpc
-      Protocol: HTTP
-      Port: 3000
-      TargetType: ip
 
   ALBListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupService1
       LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 80
       Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            StatusCode: "404"
+            ContentType: "text/plain"
+            MessageBody: "Not Found"
