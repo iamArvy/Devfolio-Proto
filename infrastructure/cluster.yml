@@ -194,6 +194,99 @@ Resources:
     # https://docs.aws.amazon.com/AmazonECS/latest/developerguide/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonECSTaskExecutionRolePolicy
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+  
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${ProjectName}-LaunchTemplate
+      LaunchTemplateData:
+        SecurityGroupIds:
+          - !Ref 'ECSSecurityGroup'
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub ${ProjectName}-EC2Instance
+          - ResourceType: volume
+            Tags:
+              - Key: Name
+                Value: !Sub ${ProjectName}-EC2Volume
+        InstanceInitiatedShutdownBehavior: terminate
+        KeyName: XXXXXXXXXXXXXXXXXXXX
+        ImageId: XXXXXXXXXXXXXXXXXXXXX
+        InstanceType: t2.micro
+        UserData:
+          "Fn::Base64": |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            ec2-metadata -i > /var/www/html/index.html
+      VpcSecurityGroupIds:
+        - !Ref 'ECSSecurityGroup'
+      # BlockDeviceMappings:
+      #   - DeviceName: /dev/sda1
+      #     Ebs:
+      #       VolumeSize: 20
+      #       VolumeType: gp2
+      #       DeleteOnTermination: true
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Security Group for ECS
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-ECSSecurityGroup
+  AutoscalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      LaunchConfigurationName: !Ref 'LaunchConfiguration'
+      MinSize: 1
+      MaxSize: 1
+      DesiredCapacity: 1
+
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: XXXXXXXXXXXXXXXXXXXXX
+      InstanceType: t2.micro
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroups:
+        - !Ref 'ECSSecurityGroup'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ECSRole
+
+  ECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
 Outputs:
   ClusterName:
     Description: The ECS cluster into which to launch resources

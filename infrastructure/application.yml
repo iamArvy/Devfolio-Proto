@@ -1,0 +1,234 @@
+Parameters:
+
+Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ALB-SecurityGroup
+      VpcId:
+        Fn::ImportValue: !Sub "${AWS::Region}-VPCId"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+    
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS-SecurityGroup
+      VpcId:
+        Fn::ImportValue: !Sub "${AWS::Region}-VPCId"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref  ALBSecurityGroup
+  
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub "${AWS::StackName}-ALB"
+      Scheme: internet-facing
+      Type: application
+      SecurityGroups:
+        - Ref: ALBSecurityGroup
+      Subnets:
+        - Fn::ImportValue: !Sub "${AWS::Region}-PublicSubnet1"
+        - Fn::ImportValue: !Sub "${AWS::Region}-PublicSubnet2"
+  
+  ApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref AuthServiceTargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: portfolio-ecs-cluster
+
+  ECSInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: portfolio-ecs-instance-role
+      Path: /
+      ManagedPolicyArns:
+        - XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: portfolio-ecs-instance-profile
+      Roles:
+        - !Ref ECSInstanceRole
+  
+  ECSLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: portfolio-ecs-launch-template
+      LaunchTemplateData:
+        SecurityGroupIds:
+          - !Ref ECSSecurityGroup
+        ImageId: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        InstanceType: t2.micro
+        IamInstanceProfile:
+          Arn: !GetAtt ECSInstanceProfile.Arn
+        UserData:
+          "Fn::Base64":
+            "Fn::Sub":
+              - |
+                #!/bin/bash -xe
+                yum install -y aws-cfn-bootstrap
+                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ECSCluster --region ${AWS::Region}
+              - ECSCluster: !Ref ECSCluster
+
+    ECSAutoScalingGroup:
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties:
+        VPCZoneIdentifier:
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+        LaunchTemplate:
+          LaunchTemplateId: !Ref ECSLaunchTemplate
+          Version: !GetAtt ECSLaunchTemplate.LatestVersionNumber
+        MinSize: 1
+        MaxSize: 2
+        DesiredCapacity: 1
+        TargetGroupARNs:
+          - !Ref ServiceTargetGroup
+
+  ECSClusterCapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref ECSAutoscalingGroup
+        ManagedScaling:
+          Status: ENABLED
+          TargetCapacity: 100
+      Managed: true
+      ManagedScaling:
+        Status: ENABLED
+        TargetCapacity: 100
+  ECSAutoscalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: portfolio-ecs-autoscaling-group
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet1"
+        - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet2"
+      LaunchConfigurationName: !Ref ECSClusterLaunchConfiguration
+      MinSize: "1"
+      MaxSize: "3"
+      DesiredCapacity: "1"
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName } ASG"
+          PropagateAtLaunch: true
+
+  ECSClusterLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      LaunchConfigurationName: portfolio-ecs-launch-config
+      AssociatePublicIpAddress: false
+      ImageId: !Ref ECSClusterEC2AMILatest
+      InstanceType: t2.micro
+      IamInstanceProfile: !Ref ECSClusterInstanceProfile
+      SecurityGroups:
+        - Fn::ImportValue: !Sub "${AWS::Region}-ContainerInstanceSecurityGroup"
+  
+
+  DashboardECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: dashboard-ecs-task
+      ExecutionRoleArn: !ImportValue ECSTaskExecutionRoleArn
+      RequiresCompatibilities:
+        - "FARGATE"
+      Memory: "512"
+      Cpu: "256"
+      NetworkMode: "awsvpc"
+      ContainerDefinitions:
+        - Name: dashboard-ecs-task
+          Image: !GetAtt PortfolioDashboardRepository.RepositoryUri
+          Essential: true
+          Memory: 512
+          PortMappings:
+            - ContainerPort: 3000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !ImportValue DashboardECSTaskLogGroupArn
+              awslogs-region: !Sub "${AWS::Region}"
+              awslogs-stream-prefix: "dashboard-ecs-task"
+
+  ApiEcsTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: api-ecs-task
+      ExecutionRoleArn: !ImportValue ECSTaskExecutionRoleArn
+      RequiresCompatibilities:
+        - "FARGATE"
+      Memory: "512"
+      Cpu: "256"
+      NetworkMode: "awsvpc"
+      ContainerDefinitions:
+        - Name: api-ecs-task
+          Image: !GetAtt PortfolioApiRepository.RepositoryUri
+          Essential: true
+          Memory: 512
+          PortMappings:
+            - ContainerPort: 3000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !ImportValue APIECSTaskLogGroupArn
+              awslogs-region: !Sub "${AWS::Region}"
+              awslogs-stream-prefix: "api-ecs-task"
+
+  DashboardECSService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: dashboard-ecs-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref DashboardECSTaskDefinition
+      DesiredCount: 1
+      LaunchType: "FARGATE"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          SecurityGroups:
+            - Fn::ImportValue: !Sub "${AWS::Region}-DashboardECSSecurityGroup"
+          Subnets:
+            - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet1"
+            - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet2"
+
+  ApiEcsService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: api-ecs-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ApiEcsTaskDefinition
+      DesiredCount: 1
+      LaunchType: "FARGATE"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          SecurityGroups:
+            - Fn::ImportValue: !Sub "${AWS::Region}-ApiECSSecurityGroup"
+          Subnets:
+            - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet1"
+            - Fn::ImportValue: !Sub "${AWS::Region}-PrivateSubnet2"

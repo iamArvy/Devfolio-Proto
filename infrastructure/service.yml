@@ -1,0 +1,103 @@
+Parameters:
+  ApplicationLoadBalancerListener:
+    Type: String
+    Description: The listener of the application load balancer.
+  VPC:
+    Type: String
+    Description: The ID of the VPC in which the ECS cluster is deployed.
+  ECSCluster:
+    Type: String
+    Description: The name of the ECS cluster.
+  ImageRepository:
+    Type: String
+    Description: The URI of the ECR repository for the auth service.
+  TaskExecutionRole:
+    Type: String
+    Description: The ARN of the task execution role for the auth service.
+  PathPattern:
+    Type: String
+    Description: The path pattern for the auth service.
+    Default: /auth/*
+    AllowedPattern: ^/.*$
+  ServiceName:
+    Type: String
+    Description: The name of the microservice.
+    Default: auth-service
+  ListenerPriority:
+    Type: Number
+    Description: The priority of the listener rule.
+    Default: 100
+  ContainerPort:
+    Type: Number
+    Description: The port on which the container is listening.
+    Default: 3000
+  Cpu:
+    Type: Number
+    Description: The number of cpu units used by the task.
+    Default: 256
+  Memory:
+    Type: Number
+    Description: The amount (in MiB) of memory used by the task.
+    Default: 512
+
+Resources:
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub "${ServiceName}-tg"
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VPC
+      TargetType: instance  # ✅ Valid for EC2 launch type
+
+  ListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - !Ref PathPattern
+      ListenerArn: !Ref ApplicationLoadBalancerListener
+      Priority: !Ref ListenerPriority
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${ServiceName}-task"
+      ExecutionRoleArn: !Ref TaskExecutionRole  # ✅ Fixed incorrect reference
+      RequiresCompatibilities:
+        - "EC2"
+      NetworkMode: awsvpc # ✅ Required for EC2 launch type
+      ContainerDefinitions:
+        - Name: !Ref ServiceName
+          Image: !Ref ImageRepository
+          Essential: true
+          Memory: !Ref Memory
+          Cpu: !Ref Cpu
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
+              awslogs-region: !Sub "${AWS::Region}"
+              awslogs-stream-prefix: !Ref ServiceName
+
+  Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Ref ServiceName
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: "EC2"
+      LoadBalancers:  # ✅ Added to link ECS to ALB
+        - ContainerName: !Ref ServiceName
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup
+      PlacementStrategies:
+        - Type: spread
+          Field: attribute:ecs.availability-zone

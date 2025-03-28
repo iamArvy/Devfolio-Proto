@@ -29,10 +29,50 @@ Parameters:
     Default: "false"
 
 Resources:
+  ParameterStoreUsername:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /rds/db/username
+      Type: String
+      Value: !Ref DBUser
+      Description: RDS database username
+
+  ParameterStorePassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /rds/db/password
+      Type: SecureString
+      Value: !Ref DBPassword
+      Description: RDS database password
+
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-RDSSubnet1
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-RDSSubnet2
+
   RDSPostgresDB:
     Type: "AWS::RDS::DBInstance"
     Properties:
-      DBInstanceIdentifier: "portfolio-db"
+      DBInstanceIdentifier: "devfolio-db"
       DBName: !Ref DBName
       Engine: !Ref DBEngine
       EngineVersion: !Ref DBVersion
@@ -68,22 +108,54 @@ Resources:
         - !Ref Subnet1
         - !Ref Subnet2
 
-  ParameterStoreUsername:
-    Type: AWS::SSM::Parameter
+  PrivateRouteTableAssociationC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      Name: /rds/db/username
-      Type: String
-      Value: !Ref DBUser
-      Description: RDS database username
+      RouteTableId: !Ref RouteTablePrivate
+      SubnetId: !Ref RDSSubnet1
 
-  ParameterStorePassword:
-    Type: AWS::SSM::Parameter
+  PrivateRouteTableAssociationD:
+    Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      Name: /rds/db/password
-      Type: SecureString
-      Value: !Ref DBPassword
-      Description: RDS database password
+      RouteTableId: !Ref RouteTablePrivate
+      SubnetId: !Ref RDSSubnet2
+  
+  RDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t2.micro
+      AllocatedStorage: 20
+      Engine: MySQL
+      MasterUsername: root
+      MasterUserPassword: password
+      DBName: mydb
+      PubliclyAccessible: true
+      StorageType: gp2
+      StorageEncrypted: true
+      VpcSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-RDS
 
+  RDSSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Security Group for RDS
+        VpcId: !Ref VPC
+        SecurityGroupIngress: []
+        Tags:
+          - Key: Name
+            Value: !Sub ${ProjectName}-RDSSecurityGroup
+            Description: Security Group for RDS
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: RDS subnet group
+      SubnetIds:
+        - !Ref RDSSubnet1
+        - !Ref RDSSubnet2
 Outputs:
   RDSPostgresEndpoint:
     Description: "PostgreSQL database endpoint"
