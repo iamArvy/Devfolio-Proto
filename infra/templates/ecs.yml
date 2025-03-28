@@ -52,7 +52,7 @@ Resources:
     Properties:
       LaunchTemplateName: "ecs-launch-template"
       LaunchTemplateData:
-        ImageId: "/aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id"
+        ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref InstanceProfile
