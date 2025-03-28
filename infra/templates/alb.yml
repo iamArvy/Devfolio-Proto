@@ -1,10 +1,8 @@
 Parameter:
   VPC:
     Type: "AWS::EC2::VPC::Id"
-  Subnet1:
-    Type: "AWS::EC2::Subnet::Id"
-  Subnet2:
-    Type: "AWS::EC2::Subnet::Id"
+  Subnets:
+    Type: "List<AWS::EC2::Subnet::Id>"
 Resources:
   ApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -17,9 +15,7 @@ Resources:
       Type: application
       SecurityGroups:
         - !Ref LoadBalancerSG
-      Subnets:
-        - !Ref Subnet1
-        - !Ref Subnet2
+      Subnets: !Ref Subnets
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALB
