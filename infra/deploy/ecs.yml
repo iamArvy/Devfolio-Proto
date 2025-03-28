@@ -5,4 +5,5 @@ parameters:
   Subnet1: subnet-02746d42ba51a1211
   Subnet2: subnet-046f1683e3ca6704b
   MaxSize: 3
+  ImageId: ami-0906069ba72f8e486
 tags: {}
