@@ -1,7 +1,6 @@
 template-file-path: infra/templates/alb.yml
 parameters:
   VPC: vpc-020d437435794899e
-  # Subnets:
-  #   - subnet-02746d42ba51a1211
-  #   - subnet-046f1683e3ca6704b
+  Subnet1: subnet-02746d42ba51a1211
+  Subnet2: subnet-046f1683e3ca6704b
 tags: {}
