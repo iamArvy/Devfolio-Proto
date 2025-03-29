@@ -20,12 +20,20 @@ Parameters:
   RouteTable:
     Type: AWS::EC2::RouteTable::Id
     Default: "false"
+  Subnet1Cidr:
+    Type: String
+    Default: 10.0.12.0/24
+    Description: Private subnet CIDR block
+  Subnet2Cidr:
+    Type: String
+    Default: 10.0.13.0/24
+    Description: Private subnet CIDR block
 
 Resources:
   Subnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref PrivateSubnet1Cidr
+      CidrBlock: !Ref Subnet1Cidr
       VpcId: !Ref VPC
       AvailabilityZone: !Select
         - 0
@@ -37,7 +45,7 @@ Resources:
   Subnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref PrivateSubnet2Cidr
+      CidrBlock: !Ref Subnet2Cidr
       VpcId: !Ref VPC
       AvailabilityZone: !Select
         - 1
