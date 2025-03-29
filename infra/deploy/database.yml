@@ -1,4 +1,4 @@
-template-file-path: infra/database.yml
+template-file-path: infra/templates/database.yml
 parameters:
   VPC: vpc-020d437435794899e
   DBInstanceIdentifier: "devfolio-db-id"
