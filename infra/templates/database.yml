@@ -71,7 +71,7 @@ Resources:
       EnableIAMDatabaseAuthentication: !Ref EnableIAMAuth
       VPCSecurityGroups:
         - !GetAtt SecurityGroup.GroupId
-      DBSubnetGroupName: !Ref RDSSubnetGroup
+      DBSubnetGroupName: !Ref SubnetGroup
       BackupRetentionPeriod: 7
 
   SecurityGroup:
