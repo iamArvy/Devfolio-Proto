@@ -11,9 +11,6 @@ Parameters:
   ImageRepository:
     Type: String
     Description: The URI of the ECR repository for the auth service.
-  TaskExecutionRole:
-    Type: String
-    Description: The ARN of the task execution role for the auth service.
   PathPattern:
     Type: String
     Description: The path pattern for the auth service.
@@ -84,11 +81,11 @@ Resources:
             - Name: AWS_REGION
               Value: !Sub "${AWS::Region}"
             - Name: JWT_SECRET
-              Value: 123
+              Value: !Sub "{{resolve:ssm-secure:/devfolio/access-secret}}"
             - Name: DB_URL
-              Value: postgres://postgres:123@db:5432/auth
+              Value: !Sub "{{resolve:ssm-secure:/devfolio/db-url}}"
             - Name: REFRESH_SECRET
-              Value: 1234
+              Value: !Sub "{{resolve:ssm-secure:/devfolio/refresh-secret}}"
             - Name: REFRESH_TOKEN_EXPIRY
               Value: 7d
             - Name: ACCESS_TOKEN_EXPIRY

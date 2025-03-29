@@ -1,0 +1,22 @@
+name: Deploy Portfolio Dashboard
+
+on:
+  push:
+    paths:
+      - 'apps/auth/**'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dashboard:
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      APP_NAME: main
+    secrets:
+      AWS_ROLE: ${{ secrets.AWS_ROLE }}
+      REPOSITORY: devfolio/auth
