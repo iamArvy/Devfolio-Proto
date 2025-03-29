@@ -18,7 +18,7 @@ Parameters:
     AllowedValues: ["true", "false"]
     Default: "false"
   RouteTable:
-    Type: AWS::EC2::RouteTable::Id
+    Type: String
     Default: "false"
   Subnet1Cidr:
     Type: String
