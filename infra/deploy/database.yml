@@ -3,7 +3,7 @@ parameters:
   VPC: vpc-020d437435794899e
   DBInstanceIdentifier: "devfolio-db-id"
   DBEngine: postgres
-  DBVersion: "15.3"
+  DBVersion: "PostgreSQL 17.4-R1"
   ECSSecurityGroup: sg-051ccb6bf6069f98a
   RouteTable: rtb-0eb493fab61e079b3
 tags: {}
