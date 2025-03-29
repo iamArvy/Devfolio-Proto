@@ -66,8 +66,8 @@ Resources:
       StorageType: "gp2"
       MultiAZ: false
       PubliclyAccessible: false
-      MasterUsername: !Sub "{{resolve:ssm:/myapp/db-user}}"
-      MasterUserPassword: !Sub "{{resolve:ssm-secure:/myapp/db-password}}"
+      MasterUsername: !Sub "{{resolve:ssm:/devfolio/db-user}}"
+      MasterUserPassword: !Sub "{{resolve:ssm-secure:/devfolio/db-password}}"
       EnableIAMDatabaseAuthentication: !Ref EnableIAMAuth
       VPCSecurityGroups:
         - !GetAtt SecurityGroup.GroupId
