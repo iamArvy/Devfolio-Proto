@@ -22,7 +22,6 @@ Parameters:
   ServiceName:
     Type: String
     Description: The name of the microservice.
-    Default: auth-service
   ListenerPriority:
     Type: Number
     Description: The priority of the listener rule.
@@ -77,6 +76,23 @@ Resources:
           Essential: true
           Memory: !Ref Memory
           Cpu: !Ref Cpu
+          Environment:
+            - Name: PORT
+              Value: !Ref ContainerPort
+            - Name: NODE_ENV
+              Value: production
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
+            - Name: JWT_SECRET
+              Value: 123
+            - Name: DB_URL
+              Value: postgres://postgres:123@db:5432/auth
+            - Name: REFRESH_SECRET
+              Value: 1234
+            - Name: REFRESH_TOKEN_EXPIRY
+              Value: 7d
+            - Name: ACCESS_TOKEN_EXPIRY
+              Value: 15m
           PortMappings:
             - ContainerPort: !Ref ContainerPort
           LogConfiguration:

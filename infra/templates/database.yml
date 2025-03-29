@@ -2,22 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
   VPC:
     Type: AWS::EC2::VPC::Id
-  Subnet1:
-    Type: AWS::EC2::Subnet::Id
-  Subnet2:
-    Type: AWS::EC2::Subnet::Id
   DBInstanceIdentifier:
     Type: String
     Default: "devfolio-db"
-  DBName:
-    Type: String
-    Default: "portfolio"
-  DBUser:
-    Type: String
-    Default: "portfolio"
-  DBPassword:
-    Type: String
-    NoEcho: true
   DBEngine:
     Type: String
     Default: "postgres"
@@ -35,22 +22,6 @@ Parameters:
     Default: "false"
 
 Resources:
-  ParameterStoreUsername:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /rds/db/username
-      Type: String
-      Value: !Ref DBUser
-      Description: RDS database username
-
-  ParameterStorePassword:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: /rds/db/password
-      Type: SecureString
-      Value: !Ref DBPassword
-      Description: RDS database password
-
   Subnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -61,7 +32,7 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-RDSSubnet1
+          Value: !Sub ${AWS::StackName}-RDSSubnet1
 
   Subnet2:
     Type: AWS::EC2::Subnet
@@ -73,13 +44,13 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-RDSSubnet2
+          Value: !Sub ${AWS::StackName}-RDSSubnet2
 
   DB:
     Type: "AWS::RDS::DBInstance"
     Properties:
       DBInstanceIdentifier: !Ref DBInstanceIdentifier
-      DBName: !Ref DBName
+      DBName: !Sub "{{resolve:ssm:/devfolio/db-name}}"
       Engine: !Ref DBEngine
       EngineVersion: !Ref DBVersion
       DBInstanceClass: "db.t3.micro"
@@ -87,8 +58,8 @@ Resources:
       StorageType: "gp2"
       MultiAZ: false
       PubliclyAccessible: false
-      MasterUsername: !Ref DBUser
-      MasterUserPassword: !Ref DBPassword
+      MasterUsername: !Sub "{{resolve:ssm:/myapp/db-user}}"
+      MasterUserPassword: !Sub "{{resolve:ssm-secure:/myapp/db-password}}"
       EnableIAMDatabaseAuthentication: !Ref EnableIAMAuth
       VPCSecurityGroups:
         - !GetAtt SecurityGroup.GroupId
