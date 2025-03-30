@@ -1,5 +1,5 @@
 import { User as UserEntity } from './user.entity';
-import { PrismaService } from '@app/shared';
+import { PrismaService } from '@app/shared/prisma';
 import {
   Injectable,
   NotFoundException,

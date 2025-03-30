@@ -8,7 +8,6 @@ import { JobModule } from './job';
 import { ProjectModule } from './project';
 import { PrismaModule } from '@app/shared/prisma';
 import { StorageModule } from '@app/shared/storage';
-import { UserModule } from '@app/shared/user';
 import { ProfileModule } from './profile/profile.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -33,7 +32,6 @@ import { JwtStrategy } from '@app/shared/strategies';
     ProjectModule,
     StackModule,
     PrismaModule,
-    UserModule,
     StorageModule,
     ProfileModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
