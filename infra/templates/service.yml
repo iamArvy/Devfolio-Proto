@@ -63,7 +63,6 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub "${ServiceName}-task"
-      ExecutionRoleArn: !Ref TaskExecutionRole  # ✅ Fixed incorrect reference
       RequiresCompatibilities:
         - "EC2"
       NetworkMode: awsvpc # ✅ Required for EC2 launch type
