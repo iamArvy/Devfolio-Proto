@@ -1,4 +1,4 @@
-template-file-path: infra/network.yml
+template-file-path: infra/service.yml
 parameters:
   ApplicationLoadBalancerListener: arn:aws:elasticloadbalancing:eu-north-1:970547356413:listener/app/Devfolio-ALB-ALB/7bb857da8c8c4928/d2c2829a858ca2a7
   VPC: vpc-020d437435794899e
