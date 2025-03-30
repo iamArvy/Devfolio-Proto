@@ -69,7 +69,7 @@ Resources:
       ExecutionRoleArn: !Ref ECSTaskExecutionRole  # ✅ Add execution role for accessing SSM
       RequiresCompatibilities:
         - "EC2"
-      NetworkMode: awsvpc # ✅ Required for EC2 launch type
+      NetworkMode: bridge
       ContainerDefinitions:
         - Name: !Ref ServiceName
           Image: !Ref ImageRepository
