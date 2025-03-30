@@ -37,9 +37,9 @@ jobs:
       - name: Build Nest App
         run: npm run build ${{ inputs.APP_NAME }}
 
-      - name: Create .env File
-        run: |
-          [ -f .env ] || cp .env.example .env
+      # - name: Create .env File
+      #   run: |
+      #     [ -f .env ] || cp .env.example .env
 
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4

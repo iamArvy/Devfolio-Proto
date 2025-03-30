@@ -1,4 +1,4 @@
-name: Deploy Portfolio Dashboard
+name: Deploy Auth Service
 
 on:
   push:
