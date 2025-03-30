@@ -1,11 +1,11 @@
-name: Deploy Portfolio Dashboard
+name: Deploy Devfolio Dashboard
 
 on:
-  # push:
-  #   paths:
-  #     - 'apps/api-gateway/**'
-  #   branches:
-  #     - main
+  push:
+    paths:
+      - 'apps/dashboard/**'
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ jobs:
   deploy-dashboard:
     uses: ./.github/workflows/deploy-template.yml
     with:
-      APP_NAME: main
+      APP_NAME: dashboard
     secrets:
       AWS_ROLE: ${{ secrets.AWS_ROLE }}
-      REPOSITORY: portfolio-dashboard-repository
+      REPOSITORY: devfolio/dashboard

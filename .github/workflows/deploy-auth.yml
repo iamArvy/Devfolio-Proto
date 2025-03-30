@@ -16,7 +16,7 @@ jobs:
   deploy-dashboard:
     uses: ./.github/workflows/deploy-template.yml
     with:
-      APP_NAME: main
+      APP_NAME: auth
     secrets:
       AWS_ROLE: ${{ secrets.AWS_ROLE }}
       REPOSITORY: devfolio/auth
