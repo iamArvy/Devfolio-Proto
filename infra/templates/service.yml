@@ -60,44 +60,44 @@ Resources:
       Priority: !Ref ListenerPriority
 
   TaskDefinition:
-  Type: AWS::ECS::TaskDefinition
-  Properties:
-    Family: !Sub "${ServiceName}-task"
-    RequiresCompatibilities:
-      - "EC2"
-    NetworkMode: awsvpc # ✅ Required for EC2 launch type
-    ContainerDefinitions:
-      - Name: !Ref ServiceName
-        Image: !Ref ImageRepository
-        Essential: true
-        Memory: !Ref Memory
-        Cpu: !Ref Cpu
-        Environment:
-          - Name: PORT
-            Value: !Ref ContainerPort
-          - Name: NODE_ENV
-            Value: production
-          - Name: AWS_REGION
-            Value: !Sub "${AWS::Region}"
-          - Name: REFRESH_TOKEN_EXPIRY
-            Value: 7d
-          - Name: ACCESS_TOKEN_EXPIRY
-            Value: 15m
-        Secrets:  # ✅ Use 'Secrets' instead of 'Environment' for SSM SecureString
-          - Name: JWT_SECRET
-            ValueFrom: !Sub "/devfolio/access-secret"
-          - Name: DB_URL
-            ValueFrom: !Sub "/devfolio/db-url"
-          - Name: REFRESH_SECRET
-            ValueFrom: !Sub "/devfolio/refresh-secret"
-        PortMappings:
-          - ContainerPort: !Ref ContainerPort
-        LogConfiguration:
-          LogDriver: awslogs
-          Options:
-            awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
-            awslogs-region: !Sub "${AWS::Region}"
-            awslogs-stream-prefix: !Ref ServiceName
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${ServiceName}-task"
+      RequiresCompatibilities:
+        - "EC2"
+      NetworkMode: awsvpc # ✅ Required for EC2 launch type
+      ContainerDefinitions:
+        - Name: !Ref ServiceName
+          Image: !Ref ImageRepository
+          Essential: true
+          Memory: !Ref Memory
+          Cpu: !Ref Cpu
+          Environment:
+            - Name: PORT
+              Value: !Ref ContainerPort
+            - Name: NODE_ENV
+              Value: production
+            - Name: AWS_REGION
+              Value: !Sub "${AWS::Region}"
+            - Name: REFRESH_TOKEN_EXPIRY
+              Value: 7d
+            - Name: ACCESS_TOKEN_EXPIRY
+              Value: 15m
+          Secrets: 
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "/devfolio/access-secret"
+            - Name: DB_URL
+              ValueFrom: !Sub "/devfolio/db-url"
+            - Name: REFRESH_SECRET
+              ValueFrom: !Sub "/devfolio/refresh-secret"
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
+              awslogs-region: !Sub "${AWS::Region}"
+              awslogs-stream-prefix: !Ref ServiceName
 
 
   Service:
