@@ -35,6 +35,9 @@ Parameters:
     Type: Number
     Description: The amount (in MiB) of memory used by the task.
     Default: 512
+  ECSTaskExecutionRole:
+    Type: String
+    Description: The IAM role assumed by Amazon ECS container agent.
 
 Resources:
   TargetGroup:
@@ -63,6 +66,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub "${ServiceName}-task"
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole  # ✅ Add execution role for accessing SSM
       RequiresCompatibilities:
         - "EC2"
       NetworkMode: awsvpc # ✅ Required for EC2 launch type

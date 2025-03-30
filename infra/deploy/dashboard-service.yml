@@ -7,4 +7,5 @@ parameters:
   PathPattern: /dashboard/*
   ServiceName: dashboard-service
   ListenerPriority: 2
+  ECSTaskExecutionRole: arn:aws:iam::970547356413:role/Devfolio-ECS-Role-K4gBJ4VBNLMQ
 tags: {}
