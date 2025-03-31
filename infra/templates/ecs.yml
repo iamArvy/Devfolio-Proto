@@ -78,29 +78,29 @@ Resources:
       Roles:
         - !Ref Role
 
-  CapacityProvider:
-    Type: AWS::ECS::CapacityProvider
-    Properties:
-      AutoScalingGroupProvider:
-        AutoScalingGroupArn: !Ref AutoScalingGroup
-        ManagedScaling:
-          InstanceWarmupPeriod: 60
-          MinimumScalingStepSize: 1
-          MaximumScalingStepSize: 10
-          Status: ENABLED
-          TargetCapacity: 100
-        ManagedTerminationProtection: ENABLED
+  # CapacityProvider:
+  #   Type: AWS::ECS::CapacityProvider
+  #   Properties:
+  #     AutoScalingGroupProvider:
+  #       AutoScalingGroupArn: !Ref AutoScalingGroup
+  #       ManagedScaling:
+  #         InstanceWarmupPeriod: 60
+  #         MinimumScalingStepSize: 1
+  #         MaximumScalingStepSize: 10
+  #         Status: ENABLED
+  #         TargetCapacity: 100
+  #       ManagedTerminationProtection: ENABLED
 
-  CapacityProviderAssociation:
-    Type: AWS::ECS::ClusterCapacityProviderAssociations
-    Properties:
-      Cluster: !Ref Cluster
-      CapacityProviders:
-        - !Ref CapacityProvider
-      DefaultCapacityProviderStrategy:
-        - Base: 0
-          CapacityProvider: !Ref CapacityProvider
-          Weight: 1
+  # CapacityProviderAssociation:
+  #   Type: AWS::ECS::ClusterCapacityProviderAssociations
+  #   Properties:
+  #     Cluster: !Ref Cluster
+  #     CapacityProviders:
+  #       - !Ref CapacityProvider
+  #     DefaultCapacityProviderStrategy:
+  #       - Base: 0
+  #         CapacityProvider: !Ref CapacityProvider
+  #         Weight: 1
 
   ContainerHostSecurityGroup:
     Type: AWS::EC2::SecurityGroup
