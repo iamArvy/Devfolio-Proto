@@ -52,6 +52,7 @@ Resources:
     DependsOn:
       - Role
       - Cluster
+      - SecurityGroup
     Properties:
       LaunchTemplateName: "ecs-launch-template"
       LaunchTemplateData:
@@ -60,12 +61,12 @@ Resources:
         IamInstanceProfile:
           Name: !Ref InstanceProfile
         SecurityGroupIds:
-          - !Ref ContainerHostSecurityGroup
+          - !Ref SecurityGroup
         NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
           Groups:
-            - !Ref ContainerHostSecurityGroup
+            - !Ref SecurityGroup
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
@@ -107,7 +108,7 @@ Resources:
           CapacityProvider: !Ref CapacityProvider
           Weight: 1
 
-  ContainerHostSecurityGroup:
+  SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the EC2 hosts that run containers
