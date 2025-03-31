@@ -18,7 +18,7 @@ Parameters:
     Type: AWS::EC2::Image::Id
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id
   LoadBalancerSG:
-    Type:: String
+    Type: String
 
 Resources:
   Cluster:
