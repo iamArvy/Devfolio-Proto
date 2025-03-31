@@ -4,7 +4,7 @@ Parameters:
     Default: "t3.micro"
   DesiredCapacity:
     Type: Number
-    Default: 0
+    Default: 1
   MaxSize:
     Type: Number
     Default: 10
