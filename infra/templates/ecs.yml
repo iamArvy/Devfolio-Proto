@@ -62,7 +62,7 @@ Resources:
           Name: !Ref InstanceProfile
         SecurityGroupIds:
           - !Ref SecurityGroup
-        NetworkInterfaces:
+        NetworkInterface:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
           Groups:
