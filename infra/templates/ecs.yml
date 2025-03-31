@@ -30,6 +30,90 @@ Resources:
           - Name: containerInsights
             Value: enabled
 
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref ContainerInstances
+        Version: !GetAtt ContainerInstances.LatestVersionNumber
+      MinSize: 0
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref DesiredCapacity
+      NewInstancesProtectedFromScaleIn: true
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+
+  ContainerInstances:
+      Type: AWS::EC2::LaunchTemplate
+      DependsOn:
+        - Role
+        - Cluster
+      Properties:
+        LaunchTemplateName: "ecs-launch-template"
+        LaunchTemplateData:
+          ImageId: !Ref ImageId
+          InstanceType: !Ref InstanceType
+          IamInstanceProfile:
+            Name: !Ref InstanceProfile
+          SecurityGroupIds:
+            - !Ref ContainerHostSecurityGroup
+          UserData:
+            Fn::Base64: !Sub |
+              #!/bin/bash -xe
+              echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config
+              yum install -y aws-cfn-bootstrap
+              /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ContainerInstances --configsets full_install --region ${AWS::Region} &
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref Role
+
+  CapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref AutoScalingGroup
+        ManagedScaling:
+          InstanceWarmupPeriod: 60
+          MinimumScalingStepSize: 1
+          MaximumScalingStepSize: 10
+          Status: ENABLED
+          TargetCapacity: 100
+        ManagedTerminationProtection: ENABLED
+
+  CapacityProviderAssociation:
+    Type: AWS::ECS::ClusterCapacityProviderAssociations
+    Properties:
+      Cluster: !Ref Cluster
+      CapacityProviders:
+        - !Ref CapacityProvider
+      DefaultCapacityProviderStrategy:
+        - Base: 0
+          CapacityProvider: !Ref CapacityProvider
+          Weight: 1
+
+  ContainerHostSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the EC2 hosts that run containers
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp 
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
+
+      SecurityGroupEgress:
+        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
+          CidrIp: 0.0.0.0/0
+
   Role:
     Type: AWS::IAM::Role
     Properties:
@@ -52,83 +136,26 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/devfolio/*
-  InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
+                
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
-      Roles:
-        - !Ref Role
-
-  ContainerInstances:
-    Type: AWS::EC2::LaunchTemplate
-    Properties:
-      LaunchTemplateName: "ecs-launch-template"
-      LaunchTemplateData:
-        ImageId: !Ref ImageId
-        InstanceType: !Ref InstanceType
-        IamInstanceProfile:
-          Name: !Ref InstanceProfile
-        SecurityGroupIds:
-          - !Ref ContainerHostSecurityGroup
-        UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash -xe
-            echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config
-            yum install -y aws-cfn-bootstrap
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ContainerInstances --region ${AWS::Region} &
-
-  AutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier:
-        - !Ref Subnet1
-        - !Ref Subnet2
-      LaunchTemplate:
-        LaunchTemplateId: !Ref ContainerInstances
-        Version: !GetAtt ContainerInstances.LatestVersionNumber
-      MinSize: 1
-      MaxSize: !Ref MaxSize
-      DesiredCapacity: !Ref DesiredCapacity
-      NewInstancesProtectedFromScaleIn: true
-
-  CapacityProvider:
-    Type: AWS::ECS::CapacityProvider
-    Properties:
-      AutoScalingGroupProvider:
-        AutoScalingGroupArn: !Ref AutoScalingGroup
-        ManagedScaling:
-          InstanceWarmupPeriod: 60
-          MinimumScalingStepSize: 1
-          MaximumScalingStepSize: 10
-          Status: ENABLED
-          TargetCapacity: 100
-        ManagedTerminationProtection: ENABLED
-
-  CapacityProviderAssociation:
-    Type: AWS::ECS::ClusterCapacityProviderAssociations
-    Properties:
-      Cluster: !Ref Cluster
-      CapacityProviders:
-        - !Ref CapacityProvider
-      DefaultCapacityProviderStrategy:
-        - CapacityProvider: !Ref CapacityProvider
-          Weight: 1
-
-  ContainerHostSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Access to the EC2 hosts that run containers
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp 
-          FromPort: 3000
-          ToPort: 3000
-          SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
-
-      SecurityGroupEgress:
-        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-          CidrIp: 0.0.0.0/0
-
-
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:*
+              StringEquals:
+                aws:SourceAccount: !Sub ${AWS::AccountId}
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 Outputs:
   ECSClusterName:
     Description: The name of the ECS cluster
