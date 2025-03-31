@@ -59,12 +59,12 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref InstanceProfile
-        Groups:
+        SecurityGroupIds:
           - !Ref ContainerHostSecurityGroup
         NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SecurityGroups:
+          Groups:
             - !Ref ContainerHostSecurityGroup
         UserData:
           Fn::Base64: !Sub |
