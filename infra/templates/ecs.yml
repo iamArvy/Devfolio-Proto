@@ -62,11 +62,17 @@ Resources:
           Name: !Ref InstanceProfile
         SecurityGroupIds:
           - !Ref SecurityGroup
-        NetworkInterface:
-        - AssociatePublicIpAddress: true
-          DeviceIndex: 0
+        NetworkInterfaces:
+        - DeviceIndex: 0
+          SubnetId: !Ref Subnet1
+          AssociatePublicIpAddress: true
           Groups:
-            - sg-051ccb6bf6069f98a 
+            - !Ref SecurityGroup
+        - DeviceIndex: 1
+          SubnetId: !Ref Subnet2
+          AssociatePublicIpAddress: true
+          Groups:
+            - !Ref SecurityGroup
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
