@@ -61,10 +61,11 @@ Resources:
           Name: !Ref InstanceProfile
         SecurityGroupIds:
           - !Ref ContainerHostSecurityGroup
-        AssignPublicIp: ENABLED
-        # NetworkInterfaces:
-        # - AssociatePublicIpAddress: true
-        #   DeviceIndex: 0
+        NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          Groups:
+            - !Ref ContainerHostSecurityGroup
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
