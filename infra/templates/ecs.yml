@@ -4,10 +4,10 @@ Parameters:
     Default: "t3.micro"
   DesiredCapacity:
     Type: Number
-    Default: 1
+    Default: 0
   MaxSize:
     Type: Number
-    Default: "10"
+    Default: 10
   VpcId:
     Type: AWS::EC2::VPC::Id
   Subnet1:
@@ -61,6 +61,9 @@ Resources:
           Name: !Ref InstanceProfile
         SecurityGroupIds:
           - !Ref ContainerHostSecurityGroup
+        NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
@@ -139,26 +142,7 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/devfolio/*
-                
-  TaskExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ecs-tasks.amazonaws.com
-            Action:
-              - sts:AssumeRole
-            Condition:
-              ArnLike:
-                aws:SourceArn: !Sub arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:*
-              StringEquals:
-                aws:SourceAccount: !Sub ${AWS::AccountId}
-      Path: /
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
 Outputs:
   ECSClusterName:
     Description: The name of the ECS cluster
