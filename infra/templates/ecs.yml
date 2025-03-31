@@ -48,28 +48,28 @@ Resources:
         WillReplace: true
 
   ContainerInstances:
-      Type: AWS::EC2::LaunchTemplate
-      DependsOn:
-        - Role
-        - Cluster
-      Properties:
-        LaunchTemplateName: "ecs-launch-template"
-        LaunchTemplateData:
-          ImageId: !Ref ImageId
-          InstanceType: !Ref InstanceType
-          IamInstanceProfile:
-            Name: !Ref InstanceProfile
-          SecurityGroupIds:
-            - !Ref ContainerHostSecurityGroup
-          UserData:
-            Fn::Base64: !Sub |
-              #!/bin/bash -xe
-              echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config
-              yum install -y aws-cfn-bootstrap
-              /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ContainerInstances --configsets full_install --region ${AWS::Region} &
-          MetadataOptions:
-            HttpEndpoint: enabled
-            HttpTokens: required
+    Type: AWS::EC2::LaunchTemplate
+    DependsOn:
+      - Role
+      - Cluster
+    Properties:
+      LaunchTemplateName: "ecs-launch-template"
+      LaunchTemplateData:
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        SecurityGroupIds:
+          - !Ref ContainerHostSecurityGroup
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config
+            yum install -y aws-cfn-bootstrap
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ContainerInstances --configsets full_install --region ${AWS::Region} &
+        MetadataOptions:
+          HttpEndpoint: enabled
+          HttpTokens: required
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
