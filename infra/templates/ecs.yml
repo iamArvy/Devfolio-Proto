@@ -66,7 +66,7 @@ Resources:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
           Groups:
-            - !Ref SecurityGroup
+            - sg-051ccb6bf6069f98a 
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
