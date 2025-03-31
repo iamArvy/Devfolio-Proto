@@ -121,7 +121,7 @@ Resources:
       - IpProtocol: tcp 
         FromPort: 3000
         ToPort: 3000
-        SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup  # Replace with your ALB SG
+        SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
 
     SecurityGroupEgress:
       - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
