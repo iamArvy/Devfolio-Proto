@@ -59,7 +59,7 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref InstanceProfile
-        SecurityGroupIds:
+        Groups:
           - !Ref ContainerHostSecurityGroup
         NetworkInterfaces:
         - AssociatePublicIpAddress: true
