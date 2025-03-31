@@ -60,8 +60,8 @@ Resources:
         InstanceType: !Ref InstanceType
         IamInstanceProfile:
           Name: !Ref InstanceProfile
-        SecurityGroupIds:
-          - !Ref SecurityGroup
+        # SecurityGroupIds:
+        #   - !Ref SecurityGroup
         NetworkInterfaces:
         - DeviceIndex: 0
           SubnetId: !Ref Subnet1
