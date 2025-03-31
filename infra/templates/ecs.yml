@@ -64,12 +64,6 @@ Resources:
         #   - !Ref SecurityGroup
         NetworkInterfaces:
         - DeviceIndex: 0
-          SubnetId: !Ref Subnet1
-          AssociatePublicIpAddress: true
-          Groups:
-            - !Ref SecurityGroup
-        - DeviceIndex: 1
-          SubnetId: !Ref Subnet2
           AssociatePublicIpAddress: true
           Groups:
             - !Ref SecurityGroup
