@@ -91,16 +91,16 @@ Resources:
           TargetCapacity: 100
         ManagedTerminationProtection: ENABLED
 
-  CapacityProviderAssociation:
-    Type: AWS::ECS::ClusterCapacityProviderAssociations
-    Properties:
-      Cluster: !Ref Cluster
-      CapacityProviders:
-        - !Ref CapacityProvider
-      DefaultCapacityProviderStrategy:
-        - Base: 0
-          CapacityProvider: !Ref CapacityProvider
-          Weight: 1
+  # CapacityProviderAssociation:
+  #   Type: AWS::ECS::ClusterCapacityProviderAssociations
+  #   Properties:
+  #     Cluster: !Ref Cluster
+  #     CapacityProviders:
+  #       - !Ref CapacityProvider
+  #     DefaultCapacityProviderStrategy:
+  #       - Base: 0
+  #         CapacityProvider: !Ref CapacityProvider
+  #         Weight: 1
 
   ContainerHostSecurityGroup:
     Type: AWS::EC2::SecurityGroup
