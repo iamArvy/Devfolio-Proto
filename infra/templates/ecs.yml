@@ -113,19 +113,19 @@ Resources:
           Weight: 1
 
   ContainerHostSecurityGroup:
-  Type: AWS::EC2::SecurityGroup
-  Properties:
-    GroupDescription: Access to the EC2 hosts that run containers
-    VpcId: !Ref VpcId
-    SecurityGroupIngress:
-      - IpProtocol: tcp 
-        FromPort: 3000
-        ToPort: 3000
-        SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the EC2 hosts that run containers
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp 
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
 
-    SecurityGroupEgress:
-      - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-        CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
+          CidrIp: 0.0.0.0/0
 
 
 Outputs:
