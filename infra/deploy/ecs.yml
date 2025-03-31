@@ -5,5 +5,6 @@ parameters:
   Subnet1: subnet-02746d42ba51a1211
   Subnet2: subnet-046f1683e3ca6704b
   MaxSize: 3
-  ImageId: ami-054ba1cb82f26097d
+  # ImageId: ami-054ba1cb82f26097d
+  LoadBalancerSG: sg-0c98b0234ed5696b2
 tags: {}
