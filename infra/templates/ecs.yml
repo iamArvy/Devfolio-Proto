@@ -174,8 +174,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       VPCZoneIdentifier:
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet1'}
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet2'}
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet1'}
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet2'}
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
