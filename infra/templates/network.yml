@@ -240,7 +240,7 @@ Resources:
       SubnetId: !Ref PrivateSubnet2
       NetworkAclId: !Ref PrivateNAcl
       
-  DbSubnet1:
+  DBSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       CidrBlock: !Sub '10.${ClassB}.64.0/20'
@@ -248,15 +248,15 @@ Resources:
       AvailabilityZone: !Select [0, !GetAZs '']
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-DbSubnet1
+          Value: !Sub ${AWS::StackName}-DBSubnet1
 
-  DbSubnet1RTA:
+  DBSubnet1RTA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRT
-      SubnetId: !Ref DbSubnet1
+      SubnetId: !Ref DBSubnet1
 
-  DbSubnet2:
+  DBSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
       CidrBlock: !Sub '10.${ClassB}.80.0/20'
@@ -264,13 +264,13 @@ Resources:
       AvailabilityZone: !Select [1, !GetAZs '']
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-DbSubnet2
+          Value: !Sub ${AWS::StackName}-DBSubnet2
 
-  DbSubnet2RTA:
+  DBSubnet2RTA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PrivateRT
-      SubnetId: !Ref DbSubnet2
+      SubnetId: !Ref DBSubnet2
 
 Outputs:
   Vpc:
