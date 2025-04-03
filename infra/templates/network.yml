@@ -58,7 +58,7 @@ Resources:
 
   RoutePublicIgw:
     Type: AWS::EC2::Route
-    DependsOn: VpcGatewayAttachment
+    DependsOn: VPCGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGW
