@@ -124,19 +124,20 @@ Resources:
                     !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${Cluster}'
 
   SG:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: Access to the EC2 hosts that run containers
-        VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
-        SecurityGroupIngress:
-          - IpProtocol: tcp 
-            FromPort: 0
-            ToPort: 65535
-            SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the EC2 hosts that run containers
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
+      SecurityGroupIngress:
+        - IpProtocol: tcp 
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
 
-        SecurityGroupEgress:
-          - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-            CidrIp: ::/0
+      SecurityGroupEgress:
+        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
+          Ipv6Ranges:
+          - CidrIpv6: "::/0"
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
