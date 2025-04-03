@@ -89,7 +89,7 @@ Resources:
   PublicNAclEntryInAllowAll:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      NetworkAclId: !Ref NetworkAclPublic
+      NetworkAclId: !Ref PublicNAcl
       RuleNumber: 99
       Protocol: -1
       RuleAction: allow
@@ -99,7 +99,7 @@ Resources:
   PublicNAclEntryOutAllowAll:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      NetworkAclId: !Ref NetworkAclPublic
+      NetworkAclId: !Ref PublicNAcl
       RuleNumber: 99
       Protocol: -1
       RuleAction: allow
@@ -127,7 +127,7 @@ Resources:
   PrivateNAclEntryOutAllowAllIPv6:
     Type: 'AWS::EC2::NetworkAclEntry'
     Properties:
-      NetworkAclId: !Ref NetworkAclPrivate
+      NetworkAclId: !Ref PrivateNAcl
       RuleNumber: 98
       Protocol: -1
       RuleAction: allow
