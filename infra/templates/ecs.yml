@@ -127,7 +127,7 @@ Resources:
       Type: AWS::EC2::SecurityGroup
       Properties:
         GroupDescription: Access to the EC2 hosts that run containers
-        VpcId: !Ref VPC
+        VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
         SecurityGroupIngress:
           - IpProtocol: tcp 
             FromPort: 0
