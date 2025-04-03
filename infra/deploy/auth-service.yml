@@ -1,11 +1,11 @@
 template-file-path: infra/templates/service.yml
 parameters:
-  ApplicationLoadBalancerListener: arn:aws:elasticloadbalancing:eu-north-1:970547356413:listener/app/Devfolio-ALB-ALB/7bb857da8c8c4928/d2c2829a858ca2a7
-  VPC: vpc-020d437435794899e
-  ECSCluster: Devfolio-ECS-cluster
+  ParentVPCStack: Devfolio-Network
+  ParentALBStack: Devfolio-ALB
+  ParentClusterStack: Devfolio-Cluster
   ImageRepository: 970547356413.dkr.ecr.eu-north-1.amazonaws.com/devfolio/auth
   PathPattern: /auth/*
   ServiceName: auth-service
   ListenerPriority: 1
-  ECSTaskExecutionRole: arn:aws:iam::970547356413:role/Devfolio-ECS-Role-K4gBJ4VBNLMQ
+  # ECSTaskExecutionRole: arn:aws:iam::970547356413:role/Devfolio-ECS-Role-K4gBJ4VBNLMQ
 tags: {}

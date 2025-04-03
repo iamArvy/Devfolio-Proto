@@ -1,13 +1,13 @@
 Parameters:
-  ApplicationLoadBalancerListener:
+  ParentVPCStack:
     Type: String
-    Description: The listener of the application load balancer.
-  VPC:
+    Description: The name of the parent VPC stack.
+  ParentALBStack:
     Type: String
-    Description: The ID of the VPC in which the ECS cluster is deployed.
-  ECSCluster:
+    Description: The name of the parent ALB stack.
+  ParentClusterStack:
     Type: String
-    Description: The name of the ECS cluster.
+    Description: The name of the parent ECS cluster stack.
   ImageRepository:
     Type: String
     Description: The URI of the ECR repository for the auth service.
@@ -46,7 +46,7 @@ Resources:
       Name: !Sub "${ServiceName}-tg"
       Protocol: HTTP
       Port: 80
-      VpcId: !Ref VPC
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
       TargetType: instance  # ✅ Valid for EC2 launch type
 
   ListenerRule:
@@ -59,14 +59,14 @@ Resources:
         - Field: path-pattern
           Values:
             - !Ref PathPattern
-      ListenerArn: !Ref ApplicationLoadBalancerListener
+      ListenerArn: {'Fn::ImportValue': !Sub '${ParentALBStack}-ALBHttpListener'}
       Priority: !Ref ListenerPriority
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub "${ServiceName}-task"
-      ExecutionRoleArn: !Ref ECSTaskExecutionRole  # ✅ Add execution role for accessing SSM
+      # ExecutionRoleArn: !Ref ECSTaskExecutionRole
       RequiresCompatibilities:
         - "EC2"
       NetworkMode: bridge
@@ -108,7 +108,7 @@ Resources:
     Type: AWS::ECS::Service
     Properties:
       ServiceName: !Ref ServiceName
-      Cluster: !Ref ECSCluster
+      Cluster: {'Fn::ImportValue': !Sub '${ParentClusterStack}-ECSCluster'}
       TaskDefinition: !Ref TaskDefinition
       DesiredCount: 1
       LaunchType: "EC2"
