@@ -30,7 +30,7 @@ Parameters:
   ImageId:
     Type: AWS::SSM::Parameter::Value<String>
     Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
-    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+    Default: /ami/ecs/latest
   DesiredCapacity:
     Type: Number
     Default: 1
