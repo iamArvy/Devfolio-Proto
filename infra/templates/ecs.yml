@@ -223,3 +223,9 @@ Outputs:
     Value: !Ref SG
     Export:
       Name: !Sub '${AWS::StackName}-SG'
+
+  Role:
+    Description: The name of the ECS cluster
+    Value: !Ref Role
+    Export:
+      Name: !Sub '${AWS::StackName}-Role'
