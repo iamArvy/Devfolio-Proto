@@ -30,7 +30,7 @@ Parameters:
   ImageId:
     Type: AWS::SSM::Parameter::Value<String>
     Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
-    Default: /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id
+    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
   DesiredCapacity:
     Type: Number
     Default: 1
@@ -79,6 +79,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonEC2RoleforSSM
       Policies:
         - PolicyName: !Sub "${AWS::StackName}-policy"
           PolicyDocument:
@@ -169,6 +170,7 @@ Resources:
             echo "ECS_ALLOW_OFFHOST_INTROSPECTION_ACCESS=true" >> /etc/ecs/ecs.config
             yum install -y aws-cfn-bootstrap
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchTemplate --region ${AWS::Region}
+            start ecs
             /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource ASG --region ${AWS::Region}
 
   ASG:
