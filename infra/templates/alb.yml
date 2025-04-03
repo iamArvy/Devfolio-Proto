@@ -25,9 +25,7 @@ Resources:
       Type: application
       SecurityGroups:
         - !Ref SG
-      Subnets:
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet1'}
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet2'}
+      Subnets: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnets'}]
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALB

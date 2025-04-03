@@ -56,9 +56,7 @@ Resources:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
       DBSubnetGroupDescription: "Subnet group for RDS"
-      SubnetIds:
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-DbSubnet1'}
-        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-DbSubnet2'}
+      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}DBSubnets'}]
       DBSubnetGroupName: !Sub "${AWS::StackName}-db-subnet-group"
       Tags:
         - Key: Name
