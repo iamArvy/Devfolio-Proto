@@ -135,8 +135,8 @@ Resources:
           SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
 
       SecurityGroupEgress:
-        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-        - CidrIpv6: "::/0"
+        - IpProtocol: -1
+          CidrIpv6: "::/0"
 
 
   LaunchTemplate:
