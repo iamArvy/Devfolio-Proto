@@ -1,7 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-  VPC:
-    Type: AWS::EC2::VPC::Id
+  ParentVPCStack:
+    Type: String
+    Description: "Name of the VPC stack to pull configuration from."
+  ParentClusterStack:
+    Type: String
+    Description: "Name of the ECS stack to pull configuration from."
   DBInstanceIdentifier:
     Type: String
     Default: "devfolio-db"
@@ -11,49 +15,12 @@ Parameters:
   DBVersion:
     Type: String
     Default: "15.3"
-  ECSSecurityGroup:
-    Type: AWS::EC2::SecurityGroup::Id
   EnableIAMAuth:
     Type: String
     AllowedValues: ["true", "false"]
     Default: "false"
-  RouteTable:
-    Type: String
-    Default: "false"
-  Subnet1Cidr:
-    Type: String
-    Default: 10.0.12.0/24
-    Description: Private subnet CIDR block
-  Subnet2Cidr:
-    Type: String
-    Default: 10.0.13.0/24
-    Description: Private subnet CIDR block
 
 Resources:
-  Subnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref Subnet1Cidr
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select
-        - 0
-        - Fn::GetAZs: !Ref 'AWS::Region'
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-RDSSubnet1
-
-  Subnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref Subnet2Cidr
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select
-        - 1
-        - Fn::GetAZs: !Ref 'AWS::Region'
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-RDSSubnet2
-
   DB:
     Type: "AWS::RDS::DBInstance"
     Properties:
@@ -78,32 +45,24 @@ Resources:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
       GroupDescription: "Security group for RDS PostgreSQL"
-      VpcId: !Ref VPC
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
       SecurityGroupIngress:
         - IpProtocol: "tcp"
           FromPort: 5432
           ToPort: 5432
-          SourceSecurityGroupId: !Ref ECSSecurityGroup
+          SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentClusterStack}-SG'}
 
   SubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
       DBSubnetGroupDescription: "Subnet group for RDS"
       SubnetIds:
-        - !Ref Subnet1
-        - !Ref Subnet2
-
-  PrivateRouteTableAssociationC:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref RouteTable
-      SubnetId: !Ref Subnet1
-
-  PrivateRouteTableAssociationD:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref RouteTable
-      SubnetId: !Ref Subnet2
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-DbSubnet1'}
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-DbSubnet2'}
+      DBSubnetGroupName: !Sub "${AWS::StackName}-db-subnet-group"
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-RDSSubnetGroup
 Outputs:
   RDSPostgresEndpoint:
     Description: "PostgreSQL database endpoint"

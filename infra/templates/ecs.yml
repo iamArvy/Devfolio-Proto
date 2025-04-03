@@ -172,8 +172,6 @@ Resources:
 
   ASG:
     Type: AWS::AutoScaling::AutoScalingGroup
-    DependsOn:
-      - LaunchTemplate
     Properties:
       VPCZoneIdentifier:
         - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet1'}
@@ -191,7 +189,6 @@ Resources:
 
   CapacityProvider:
     Type: AWS::ECS::CapacityProvider
-    DependsOn: ASG
     Properties:
       AutoScalingGroupProvider:
         AutoScalingGroupArn: !Ref ASG

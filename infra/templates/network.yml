@@ -19,6 +19,14 @@ Parameters:
     Type: String
     Default: 10.0.9.0/24
     Description: Private subnet CIDR block
+  DbSubnet1Cidr:
+    Type: String
+    Default: 10.0.12.0/24
+    Description: Private subnet CIDR block
+  DbSubnet2Cidr:
+    Type: String
+    Default: 10.0.13.0/24
+    Description: Private subnet CIDR block
 
 Resources:
   VPC:
@@ -78,6 +86,30 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PrivateSubnet2
+  
+  DbSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref DbSubnet1Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DbSubnet1
+
+  DbSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref DbSubnet2Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DbSubnet2
 
   IGW:
     Type: AWS::EC2::InternetGateway
@@ -140,6 +172,18 @@ Resources:
       RouteTableId: !Ref PrivateRT
       SubnetId: !Ref PrivateSubnet2
 
+  DbRTA1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRT
+      SubnetId: !Ref DbSubnet1
+
+  DbRTA2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRT
+      SubnetId: !Ref DbSubnet2
+
 Outputs:
   Vpc:
     Value: !Ref VPC
@@ -161,3 +205,11 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: !Sub "${AWS::StackName}-PrivateSubnet2"
+  DbSubnet1Id:
+    Value: !Ref DbSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-DbSubnet1"
+  DbSubnet2Id:
+    Value: !Ref DbSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-DbSubnet2"
