@@ -69,11 +69,11 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-ALBHttpListener'
 
-  ALBUrl:
-    Description: "ALB URL."
-    Value: !Sub 'http://${ALB.PublicDnsName}'
-    Export:
-      Name: !Sub '${AWS::StackName}-ALBUrl'
+  # ALBUrl:
+  #   Description: "ALB URL."
+  #   Value: !Sub 'http://${ALB.DnsName}'
+  #   Export:
+  #     Name: !Sub '${AWS::StackName}-ALBUrl'
 
   SG:
     Description: "ALB SG reference."

@@ -36,7 +36,7 @@ Parameters:
     Default: 1
   MaxSize:
     Type: Number
-    Default: 10
+    Default: 1
   MinSize:
     Type: Number
     Default: 1
