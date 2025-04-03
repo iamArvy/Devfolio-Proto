@@ -56,7 +56,7 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PrivateRouteTable
 
-  RoutePublicIgw:
+  PublicRouteIgw:
     Type: AWS::EC2::Route
     DependsOn: VPCGatewayAttachment
     Properties:
@@ -64,14 +64,14 @@ Resources:
       GatewayId: !Ref IGW
       RouteTableId: !Ref PublicRT
 
-  RoutePublicEgressIgw:
+  PublicRouteEgressIgw:
     Type: AWS::EC2::Route
     Properties:
       DestinationIpv6CidrBlock: ::/0
       EgressOnlyInternetGatewayId: !Ref EgressOnlyInternetGateway
       RouteTableId: !Ref PublicRT
 
-  RoutePrivateEgressIgw:
+  PrivateRouteEgressIgw:
     Type: AWS::EC2::Route
     Properties:
       DestinationIpv6CidrBlock: ::/0
