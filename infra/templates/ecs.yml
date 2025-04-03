@@ -134,9 +134,9 @@ Resources:
             ToPort: 65535
             SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
 
-        # SecurityGroupEgress:
-        #   - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-        #     CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+          - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
+            CidrIp: ::/0
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
