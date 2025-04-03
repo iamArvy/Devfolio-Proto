@@ -1,4 +1,2 @@
 template-file-path: infra/templates/network.yml
-parameters:
-  ProjectName: Devfolio
 tags: {}
