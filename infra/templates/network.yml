@@ -1,8 +1,4 @@
 Parameters:
-  ProjectName:
-    Type: String
-    Description: Project name to link stacks
-    Default: am-i-interested
   CidrBlock:
     Type: String
     Default: 10.0.0.0/20
@@ -29,11 +25,11 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref CidrBlock
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
+      EnableDnsSupport: false
+      EnableDnsHostnames: false
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-VPC
+          Value: !Sub ${AWS::StackName}-VPC
 
   PublicSubnet1:
     Type: AWS::EC2::Subnet
@@ -45,7 +41,7 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PublicSubnet1
+          Value: !Sub ${AWS::StackName}-PublicSubnet1
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -57,7 +53,7 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PublicSubnet2
+          Value: !Sub ${AWS::StackName}-PublicSubnet2
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -69,7 +65,7 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PrivateSubnet1
+          Value: !Sub ${AWS::StackName}-PrivateSubnet1
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -81,77 +77,87 @@ Resources:
         - Fn::GetAZs: !Ref 'AWS::Region'
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PrivateSubnet2
+          Value: !Sub ${AWS::StackName}-PrivateSubnet2
 
-  InternetGateway:
+  IGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-InternetGateway
+          Value: !Sub ${AWS::StackName}-InternetGateway
 
   VpcGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref InternetGateway
+      InternetGatewayId: !Ref IGW
       VpcId: !Ref VPC
 
-  RouteTablePublic:
+  PublicRT:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PublicRouteTable
+          Value: !Sub ${AWS::StackName}-PublicRouteTable
 
   RoutePublicIgw:
     Type: AWS::EC2::Route
     DependsOn: VpcGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-      RouteTableId: !Ref RouteTablePublic
+      GatewayId: !Ref IGW
+      RouteTableId: !Ref PublicRT
 
-  PublicRouteTableAssociation1:
+  PublicRTA1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTablePublic
+      RouteTableId: !Ref PublicRT
       SubnetId: !Ref PublicSubnet1
 
-  PublicRouteTableAssociation2:
+  PublicRTA2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTablePublic
+      RouteTableId: !Ref PublicRT
       SubnetId: !Ref PublicSubnet2
 
-  RouteTablePrivate:
+  PrivateRT:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-PrivateRouteTable
+          Value: !Sub ${AWS::StackName}-PrivateRouteTable
 
-  PrivateRouteTableAssociation1:
+  PrivateRTA1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTablePrivate
+      RouteTableId: !Ref PrivateRT
       SubnetId: !Ref PrivateSubnet1
 
-  PrivateRouteTableAssociation2:
+  PrivateRTA2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTablePrivate
+      RouteTableId: !Ref PrivateRT
       SubnetId: !Ref PrivateSubnet2
 
 Outputs:
-  VpcId:
+  Vpc:
     Value: !Ref VPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPC"
   PublicSubnet1Id:
     Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet1"
   PublicSubnet2Id:
     Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet2"
   PrivateSubnet1Id:
     Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1"
   PrivateSubnet2Id:
     Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet2"

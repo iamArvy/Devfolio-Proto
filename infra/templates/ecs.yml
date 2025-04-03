@@ -1,127 +1,69 @@
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Parent Stack Configuration"
+        Parameters:
+          - ParentVPCStack
+          - ParentALBStack
+      - Label:
+          default: "Launch Template Configuration"
+        Parameters:
+          - InstanceType
+          - ImageId
+      - Label:
+          default: "ASG Configuration"
+        Parameters:
+          - DesiredCapacity
+          - MinSize
+          - MaxSize
 Parameters:
+  ParentVPCStack:
+    Type: String
+    Description: "Name of the VPC stack to pull configuration from."
+  ParentALBStack:
+    Type: String
+    Description: "Name of the ALB stack to pull configuration from."
   InstanceType:
     Type: String
     Default: "t3.micro"
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id
   DesiredCapacity:
     Type: Number
     Default: 1
   MaxSize:
     Type: Number
     Default: 10
-  VpcId:
-    Type: AWS::EC2::VPC::Id
-  Subnet1:
-    Type: AWS::EC2::Subnet::Id
-  Subnet2:
-    Type: AWS::EC2::Subnet::Id
-  ImageId:
-    Type: AWS::SSM::Parameter::Value<String>
-    Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
-    Default: /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id
-  LoadBalancerSG:
-    Type: String
+  MinSize:
+    Type: Number
+    Default: 1
+  StopContainerTimeoutInSeconds:
+    Description: 'Time in seconds the ECS agent waits before killing a stopped container (see ECS_CONTAINER_STOP_TIMEOUT).'
+    Type: Number
+    Default: 30
+    ConstraintDescription: 'Must be in the range [30-3600]'
+    MinValue: 30
+    MaxValue: 3600
 
 Resources:
   Cluster:
-      Type: AWS::ECS::Cluster
-      Properties:
-        ClusterName: !Sub "${AWS::StackName}-cluster"
-        ClusterSettings:
-          - Name: containerInsights
-            Value: enabled
-
-  AutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier:
-        - !Ref Subnet1
-        - !Ref Subnet2
-      LaunchTemplate:
-        LaunchTemplateId: !Ref ContainerInstances
-        Version: !GetAtt ContainerInstances.LatestVersionNumber
-      MinSize: 0
-      MaxSize: !Ref MaxSize
-      DesiredCapacity: !Ref DesiredCapacity
-      NewInstancesProtectedFromScaleIn: true
-    UpdatePolicy:
-      AutoScalingReplacingUpdate:
-        WillReplace: true
-
-  ContainerInstances:
-    Type: AWS::EC2::LaunchTemplate
-    DependsOn:
-      - Role
-      - Cluster
-      - SecurityGroup
-    Properties:
-      LaunchTemplateName: "ecs-launch-template"
-      LaunchTemplateData:
-        ImageId: !Ref ImageId
-        InstanceType: !Ref InstanceType
-        IamInstanceProfile:
-          Name: !Ref InstanceProfile
-        # SecurityGroupIds:
-        #   - !Ref SecurityGroup
-        NetworkInterfaces:
-        - DeviceIndex: 0
-          AssociatePublicIpAddress: true
-          Groups:
-            - !Ref SecurityGroup
-        UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash -xe
-            echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config
-            yum install -y aws-cfn-bootstrap
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource ContainerInstances --configsets full_install --region ${AWS::Region} &
-        MetadataOptions:
-          HttpEndpoint: enabled
-          HttpTokens: required
+        Type: AWS::ECS::Cluster
+        Properties:
+          ClusterName: !Sub "${AWS::StackName}-cluster"
+          ClusterSettings:
+            - Name: containerInsights
+              Value: enabled
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
+    DependsOn: Role
     Properties:
       Path: /
       Roles:
         - !Ref Role
-
-  CapacityProvider:
-    Type: AWS::ECS::CapacityProvider
-    Properties:
-      AutoScalingGroupProvider:
-        AutoScalingGroupArn: !Ref AutoScalingGroup
-        ManagedScaling:
-          InstanceWarmupPeriod: 60
-          MinimumScalingStepSize: 1
-          MaximumScalingStepSize: 10
-          Status: ENABLED
-          TargetCapacity: 100
-        ManagedTerminationProtection: ENABLED
-
-  CapacityProviderAssociation:
-    Type: AWS::ECS::ClusterCapacityProviderAssociations
-    Properties:
-      Cluster: !Ref Cluster
-      CapacityProviders:
-        - !Ref CapacityProvider
-      DefaultCapacityProviderStrategy:
-        - Base: 0
-          CapacityProvider: !Ref CapacityProvider
-          Weight: 1
-
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Access to the EC2 hosts that run containers
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp 
-          FromPort: 3000
-          ToPort: 3000
-          SourceSecurityGroupId: !Ref LoadBalancerSG  # Replace with your ALB SG
-
-      SecurityGroupEgress:
-        - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-          CidrIp: 0.0.0.0/0
 
   Role:
     Type: AWS::IAM::Role
@@ -145,10 +87,142 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/devfolio/*
+        - PolicyName: ecs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 'ecs:DiscoverPollEndpoint'
+              Resource: '*'
+        - PolicyName: ecs-cluster
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 'ecs:RegisterContainerInstance'
+              - 'ecs:SubmitContainerStateChange'
+              - 'ecs:SubmitTaskStateChange'
+              - 'ecs:ListContainerInstances'
+              Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${Cluster}'
+        - PolicyName: ecs-cluster-instance
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 'ecs:Poll'
+              - 'ecs:StartTelemetrySession'
+              - 'ecs:UpdateContainerInstancesState'
+              - 'ecs:ListTasks'
+              - 'ecs:DescribeContainerInstances'
+              Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/*'
+              Condition:
+                'StringEquals':
+                  'ecs:cluster':
+                    !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${Cluster}'
+
+  SG:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Access to the EC2 hosts that run containers
+        VpcId: !Ref VPC
+        SecurityGroupIngress:
+          - IpProtocol: tcp 
+            FromPort: 0
+            ToPort: 65535
+            SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
+
+        # SecurityGroupEgress:
+        #   - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
+        #     CidrIp: 0.0.0.0/0
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "${AWS::StackName}-launch-template"
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        ImageId: !Ref ImageId
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        MetadataOptions:
+          HttpPutResponseHopLimit: 2
+          HttpTokens: required
+        SecurityGroupIds:
+          - !Ref SG
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 80
+              VolumeType: gp2
+              DeleteOnTermination: true
+              Encrypted: true
+        UserData:
+          'Fn::Base64': !Sub |
+            #!/bin/bash -ex
+            trap '/opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource ASG --region ${AWS::Region}' ERR
+            echo "ECS_CLUSTER=${Cluster}" >> /etc/ecs/ecs.config
+            echo "ECS_CONTAINER_STOP_TIMEOUT=${StopContainerTimeoutInSeconds}s" >> /etc/ecs/ecs.config
+            echo "ECS_ALLOW_OFFHOST_INTROSPECTION_ACCESS=true" >> /etc/ecs/ecs.config
+            yum install -y aws-cfn-bootstrap
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchTemplate --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource ASG --region ${AWS::Region}
+
+  ASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DependsOn:
+      - ContainerInstances
+    Properties:
+      VPCZoneIdentifier:
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet1'}
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet2'}
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref DesiredCapacity
+      NewInstancesProtectedFromScaleIn: true
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+
+  CapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    DependsOn: ASG
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref ASG
+        ManagedScaling:
+          InstanceWarmupPeriod: 60
+          MinimumScalingStepSize: 1
+          MaximumScalingStepSize: 10
+          Status: ENABLED
+          TargetCapacity: 100
+        ManagedTerminationProtection: ENABLED
+
+  CPA:
+    Type: AWS::ECS::ClusterCapacityProviderAssociations
+    Properties:
+      Cluster: !Ref Cluster
+      CapacityProviders:
+        - !Ref CapacityProvider
+      DefaultCapacityProviderStrategy:
+        - Base: 0
+          CapacityProvider: !Ref CapacityProvider
+          Weight: 1
 
 Outputs:
-  ECSClusterName:
+  ECSCluster:
     Description: The name of the ECS cluster
     Value: !Ref Cluster
     Export:
-      Name: ECSClusterName
+      Name: !Sub '${AWS::StackName}-ECSCluster'
+  
+  SG:
+    Description: The name of the ECS cluster
+    Value: !Ref SG
+    Export:
+      Name: !Sub '${AWS::StackName}-SG'

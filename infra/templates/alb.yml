@@ -1,13 +1,10 @@
 Parameters:
-  VPC:
-    Type: "AWS::EC2::VPC::Id"
-  Subnet1:
-    Type: "AWS::EC2::Subnet::Id"
-  Subnet2:
-    Type: "AWS::EC2::Subnet::Id"
+  ParentVPCStack:
+    Type: String
+    Description: "Name of the VPC stack to pull configuration from."
 
 Resources:
-  ApplicationLoadBalancer:
+  ALB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub ${AWS::StackName}-ALB
@@ -15,31 +12,41 @@ Resources:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '30'
+        - Key: routing.http2.enabled
+          Value: 'true'
+        # - Key: deletion_protection.enabled
+        #   Value: 'false'
+        # - Key: access_logs.s3.enabled
+        #   Value: 'true'
+        # - Key: access_logs.s3.bucket
+        #   Value: !Sub '${AWS::StackName}-alb-access-logs'
+        # - Key: access_logs.s3.prefix
+        #   Value: !Sub '${AWS::StackName}'
       Type: application
       SecurityGroups:
-        - !Ref LoadBalancerSG
+        - !Ref SG
       Subnets:
-        - !Ref Subnet1
-        - !Ref Subnet2
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet1'}
+        - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnet2'}
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ALB
 
-  LoadBalancerSG:
+  SG:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Access to the public facing load balancer
-      VpcId: !Ref VPC
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: tcp
           FromPort: 80
           ToPort: 80
 
-  ALBListener:
+  ALBHttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      LoadBalancerArn: !Ref ALB
       Protocol: HTTP
       Port: 80
       DefaultActions:
@@ -48,3 +55,28 @@ Resources:
             StatusCode: "404"
             ContentType: "text/plain"
             MessageBody: "Not Found"
+
+Outputs:
+  ALB:
+    Description: "ALB reference."
+    Value: !Ref ALB
+    Export:
+      Name: !Sub '${AWS::StackName}-ALB'
+
+  ALBHttpListener:
+    Description: "ALB HTTP listener reference."
+    Value: !Ref ALBHttpListener
+    Export:
+      Name: !Sub '${AWS::StackName}-ALBHttpListener'
+
+  ALBUrl:
+    Description: "ALB URL."
+    Value: !Sub 'http://${ALB.PublicDnsName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ALBUrl'
+
+  SG:
+    Description: "ALB SG reference."
+    Value: !Ref SG
+    Export:
+      Name: !Sub '${AWS::StackName}-SG'
