@@ -136,8 +136,8 @@ Resources:
 
       SecurityGroupEgress:
         - IpProtocol: -1  # Allow all outbound traffic (needed for updates & registry access)
-          Ipv6Ranges:
-          - CidrIpv6: "::/0"
+        - CidrIpv6: "::/0"
+
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
