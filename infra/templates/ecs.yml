@@ -173,7 +173,7 @@ Resources:
   ASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     DependsOn:
-      - ContainerInstances
+      - LaunchTemplate
     Properties:
       VPCZoneIdentifier:
         - {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnet1'}
