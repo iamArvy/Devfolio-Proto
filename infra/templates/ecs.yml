@@ -164,6 +164,8 @@ Resources:
           - DeviceIndex: 0
             Ipv6AddressCount: 1   # Auto-assign 1 private IPv6 address
             AssociatePublicIpAddress: false
+            Groups:
+              - !Ref SG
         UserData:
           'Fn::Base64': !Sub |
             #!/bin/bash -ex
