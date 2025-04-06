@@ -1,6 +1,6 @@
 template-file-path: infra/templates/database.yml
 parameters:
-  ParentVPCStack: Devfolio-Network
+  ParentVPCStack: Devfolio-Networks
   ParentClusterStack: Devfolio-Cluster
   DBInstanceIdentifier: "devfolio-db-id"
   DBEngine: postgres
