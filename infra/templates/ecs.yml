@@ -21,9 +21,9 @@ Parameters:
   ParentVPCStack:
     Type: String
     Description: "Name of the VPC stack to pull configuration from."
-  ParentALBStack:
-    Type: String
-    Description: "Name of the ALB stack to pull configuration from."
+  # ParentALBStack:
+  #   Type: String
+  #   Description: "Name of the ALB stack to pull configuration from."
   InstanceType:
     Type: String
     Default: "t3.micro"

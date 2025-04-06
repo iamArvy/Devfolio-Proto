@@ -1,5 +1,5 @@
 template-file-path: infra/templates/ecs.yml
 parameters:
   ParentVPCStack: Devfolio-Networks
-  ParentALBStack: Devfolio-LB
+  # ParentALBStack: Devfolio-LB
 tags: {}
