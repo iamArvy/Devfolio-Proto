@@ -30,7 +30,7 @@ Parameters:
   ImageId:
     Type: AWS::SSM::Parameter::Value<String>
     Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
-    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/kernel-5.10/recommended/image_id
   DesiredCapacity:
     Type: Number
     Default: 1
@@ -57,6 +57,82 @@ Resources:
             - Name: containerInsights
               Value: enabled
 
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "${AWS::StackName}-launch-template"
+      LaunchTemplateData:
+        ImageId: !Ref ImageId
+        InstanceType: !Ref InstanceType
+        IamInstanceProfile:
+          Name: !Ref InstanceProfile
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: '30'
+              DeleteOnTermination: true
+        MetadataOptions:
+          HttpPutResponseHopLimit: 2
+          HttpTokens: required
+        SecurityGroupIds:
+          - !Ref SG
+        UserData: !Base64 
+          Fn::Sub:
+            - >
+              #!/bin/bash
+              /usr/bin/echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config;
+            - Cluster: !Sub "${AWS::StackName}-cluster"
+  ASG:
+    DependsOn: Cluster
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnets'}]
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: !Ref MinSize
+      MaxSize: !Ref MaxSize
+      DesiredCapacity: !Ref DesiredCapacity
+      NewInstancesProtectedFromScaleIn: true
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: true
+          Value: !Join
+            - ' - '
+            - - ECS Instance
+              - !Ref Cluster
+    UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: true
+
+  CapacityProvider:
+    Type: AWS::ECS::CapacityProvider
+    Properties:
+      AutoScalingGroupProvider:
+        AutoScalingGroupArn: !Ref ASG
+        ManagedScaling:
+          InstanceWarmupPeriod: 60
+          MinimumScalingStepSize: 1
+          MaximumScalingStepSize: 10
+          Status: ENABLED
+          TargetCapacity: 100
+        ManagedTerminationProtection: DISABLED
+        Tags:
+          - Key: Name
+            Value: !Sub "${AWS::StackName}-capacity-provider"
+            PropagateAtLaunch: true
+
+  CPA:
+    Type: AWS::ECS::ClusterCapacityProviderAssociations
+    Properties:
+      Cluster: !Ref Cluster
+      CapacityProviders:
+        - !Ref CapacityProvider
+      DefaultCapacityProviderStrategy:
+        - Base: 0
+          CapacityProvider: !Ref CapacityProvider
+          Weight: 1
+          
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     DependsOn: Role
@@ -137,79 +213,9 @@ Resources:
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIpv6: "::/0"
+  
 
-
-  LaunchTemplate:
-    Type: AWS::EC2::LaunchTemplate
-    Properties:
-      LaunchTemplateName: !Sub "${AWS::StackName}-launch-template"
-      LaunchTemplateData:
-        InstanceType: !Ref InstanceType
-        ImageId: !Ref ImageId
-        IamInstanceProfile:
-          Name: !Ref InstanceProfile
-        MetadataOptions:
-          HttpPutResponseHopLimit: 2
-          HttpTokens: required
-        SecurityGroupIds:
-          - !Ref SG
-        BlockDeviceMappings:
-          - DeviceName: /dev/xvda
-            Ebs:
-              VolumeSize: 80
-              VolumeType: gp2
-              DeleteOnTermination: true
-              Encrypted: true
-        UserData:
-          'Fn::Base64': !Sub |
-            #!/bin/bash -ex
-            trap '/opt/aws/bin/cfn-signal -e 1 --stack ${AWS::StackName} --resource ASG --region ${AWS::Region}' ERR
-            echo "ECS_CLUSTER=${Cluster}" >> /etc/ecs/ecs.config
-            echo "ECS_CONTAINER_STOP_TIMEOUT=${StopContainerTimeoutInSeconds}s" >> /etc/ecs/ecs.config
-            echo "ECS_ALLOW_OFFHOST_INTROSPECTION_ACCESS=true" >> /etc/ecs/ecs.config
-            yum install -y aws-cfn-bootstrap
-            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchTemplate --region ${AWS::Region}
-            start ecs
-            /opt/aws/bin/cfn-signal -e 0 --stack ${AWS::StackName} --resource ASG --region ${AWS::Region}
-
-  ASG:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnets'}]
-      LaunchTemplate:
-        LaunchTemplateId: !Ref LaunchTemplate
-        Version: !GetAtt LaunchTemplate.LatestVersionNumber
-      MinSize: !Ref MinSize
-      MaxSize: !Ref MaxSize
-      DesiredCapacity: !Ref DesiredCapacity
-      NewInstancesProtectedFromScaleIn: true
-    UpdatePolicy:
-      AutoScalingReplacingUpdate:
-        WillReplace: true
-
-  CapacityProvider:
-    Type: AWS::ECS::CapacityProvider
-    Properties:
-      AutoScalingGroupProvider:
-        AutoScalingGroupArn: !Ref ASG
-        ManagedScaling:
-          InstanceWarmupPeriod: 60
-          MinimumScalingStepSize: 1
-          MaximumScalingStepSize: 10
-          Status: ENABLED
-          TargetCapacity: 100
-        ManagedTerminationProtection: ENABLED
-
-  CPA:
-    Type: AWS::ECS::ClusterCapacityProviderAssociations
-    Properties:
-      Cluster: !Ref Cluster
-      CapacityProviders:
-        - !Ref CapacityProvider
-      DefaultCapacityProviderStrategy:
-        - Base: 0
-          CapacityProvider: !Ref CapacityProvider
-          Weight: 1
+  
 
 Outputs:
   ECSCluster:
