@@ -86,7 +86,7 @@ Resources:
     DependsOn: Cluster
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      VPCZoneIdentifier: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-PublicSubnets'}]
+      VPCZoneIdentifier: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}-PrivateSubnets'}]
       LaunchTemplate:
         LaunchTemplateId: !Ref LaunchTemplate
         Version: !GetAtt LaunchTemplate.LatestVersionNumber
@@ -204,11 +204,11 @@ Resources:
     Properties:
       GroupDescription: Access to the EC2 hosts that run containers
       VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
-      SecurityGroupIngress:
-        - IpProtocol: tcp 
-          FromPort: 0
-          ToPort: 65535
-          SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
+      # SecurityGroupIngress:
+      #   - IpProtocol: tcp 
+      #     FromPort: 0
+      #     ToPort: 65535
+      #     SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
 
       SecurityGroupEgress:
         - IpProtocol: -1
