@@ -117,10 +117,6 @@ Resources:
           Status: ENABLED
           TargetCapacity: 100
         ManagedTerminationProtection: DISABLED
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-capacity-provider"
-          PropagateAtLaunch: true
 
   CPA:
     Type: AWS::ECS::ClusterCapacityProviderAssociations
