@@ -118,12 +118,12 @@ Resources:
               ValueFrom: !Sub "/devfolio/refresh-secret"
           PortMappings:
             - ContainerPort: !Ref ContainerPort
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
-              awslogs-region: !Sub "${AWS::Region}"
-              awslogs-stream-prefix: !Ref ServiceName
+          # LogConfiguration:
+          #   LogDriver: awslogs
+          #   Options:
+          #     awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
+          #     awslogs-region: !Sub "${AWS::Region}"
+          #     awslogs-stream-prefix: !Ref ServiceName
   Service:
     Type: AWS::ECS::Service
     Properties:

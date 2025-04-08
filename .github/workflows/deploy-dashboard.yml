@@ -17,6 +17,7 @@ jobs:
     uses: ./.github/workflows/deploy-template.yml
     with:
       APP_NAME: dashboard
+      AWS_REGION: eu-west-1
     secrets:
       AWS_ROLE: ${{ secrets.AWS_ROLE }}
       REPOSITORY: devfolio/dashboard
