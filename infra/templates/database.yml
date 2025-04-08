@@ -52,11 +52,45 @@ Resources:
           ToPort: 5432
           SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentClusterStack}-SG'}
 
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Sub '10.${ClassB}.64.0/20'
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DBSubnet1
+
+  # DBSubnet1RTA:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRT
+  #     SubnetId: !Ref DBSubnet1
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Sub '10.${ClassB}.80.0/20'
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DBSubnet2
+
+  # DBSubnet2RTA:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PrivateRT
+  #     SubnetId: !Ref DBSubnet2
+
   SubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
       DBSubnetGroupDescription: "Subnet group for RDS"
-      SubnetIds: !Split [',', {'Fn::ImportValue': !Sub '${ParentVPCStack}DBSubnets'}]
+      SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
       DBSubnetGroupName: !Sub "${AWS::StackName}-db-subnet-group"
       Tags:
         - Key: Name

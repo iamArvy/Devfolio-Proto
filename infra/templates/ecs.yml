@@ -5,7 +5,7 @@ Metadata:
           default: "Parent Stack Configuration"
         Parameters:
           - ParentVPCStack
-          - ParentALBStack
+          # - ParentALBStack
       - Label:
           default: "Launch Template Configuration"
         Parameters:
@@ -17,16 +17,17 @@ Metadata:
           - DesiredCapacity
           - MinSize
           - MaxSize
+
 Parameters:
   ParentVPCStack:
     Type: String
     Description: "Name of the VPC stack to pull configuration from."
-  # ParentALBStack:
-  #   Type: String
-  #   Description: "Name of the ALB stack to pull configuration from."
+  ParentALBStack:
+    Type: String
+    Description: "Name of the ALB stack to pull configuration from."
   InstanceType:
     Type: String
-    Default: "t3.micro"
+    Default: "t2.micro"
   ImageId:
     Type: AWS::SSM::Parameter::Value<String>
     Description: The AMI ID for the ECS-optimized Amazon Linux 2023 AMI.
@@ -47,18 +48,18 @@ Parameters:
     ConstraintDescription: 'Must be in the range [30-3600]'
     MinValue: 30
     MaxValue: 3600
-
 Resources:
   Cluster:
-        Type: AWS::ECS::Cluster
-        Properties:
-          ClusterName: !Sub "${AWS::StackName}-cluster"
-          ClusterSettings:
-            - Name: containerInsights
-              Value: enabled
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}-cluster"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
 
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
+    DependsOn: Cluster
     Properties:
       LaunchTemplateName: !Sub "${AWS::StackName}-launch-template"
       LaunchTemplateData:
@@ -71,17 +72,75 @@ Resources:
             Ebs:
               VolumeSize: '30'
               DeleteOnTermination: true
-        MetadataOptions:
-          HttpPutResponseHopLimit: 2
-          HttpTokens: required
         SecurityGroupIds:
           - !Ref SG
         UserData: !Base64 
           Fn::Sub:
-            - >
+            - |
               #!/bin/bash
               /usr/bin/echo ECS_CLUSTER=${Cluster} >> /etc/ecs/ecs.config;
             - Cluster: !Sub "${AWS::StackName}-cluster"
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn: Role
+    Properties:
+      Path: /
+      Roles:
+        - !Ref Role
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: ECRPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:DescribeRepositories
+                  - ecr:ListImages
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+
+  SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the EC2 hosts that run containers
+      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
+      SecurityGroupIngress:
+        - IpProtocol: tcp 
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}
+
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  
   ASG:
     DependsOn: Cluster
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -128,90 +187,6 @@ Resources:
         - Base: 0
           CapacityProvider: !Ref CapacityProvider
           Weight: 1
-          
-  InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    DependsOn: Role
-    Properties:
-      Path: /
-      Roles:
-        - !Ref Role
-
-  Role:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Policies:
-        - PolicyName: !Sub "${AWS::StackName}-policy"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: ssm:GetParameters
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/devfolio/*
-        - PolicyName: ecs
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-            - Effect: Allow
-              Action:
-              - 'ecs:DiscoverPollEndpoint'
-              Resource: '*'
-        - PolicyName: ecs-cluster
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-            - Effect: Allow
-              Action:
-              - 'ecs:RegisterContainerInstance'
-              - 'ecs:SubmitContainerStateChange'
-              - 'ecs:SubmitTaskStateChange'
-              - 'ecs:ListContainerInstances'
-              Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${Cluster}'
-        - PolicyName: ecs-cluster-instance
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-            - Effect: Allow
-              Action:
-              - 'ecs:Poll'
-              - 'ecs:StartTelemetrySession'
-              - 'ecs:UpdateContainerInstancesState'
-              - 'ecs:ListTasks'
-              - 'ecs:DescribeContainerInstances'
-              Resource: !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/*'
-              Condition:
-                'StringEquals':
-                  'ecs:cluster':
-                    !Sub 'arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${Cluster}'
-
-  SG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Access to the EC2 hosts that run containers
-      VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
-      # SecurityGroupIngress:
-      #   - IpProtocol: tcp 
-      #     FromPort: 0
-      #     ToPort: 65535
-      #     SourceSecurityGroupId: {'Fn::ImportValue': !Sub '${ParentALBStack}-SG'}  # Replace with your ALB SG
-
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIpv6: "::/0"
-  
-
-  
 
 Outputs:
   ECSCluster:
@@ -219,7 +194,12 @@ Outputs:
     Value: !Ref Cluster
     Export:
       Name: !Sub '${AWS::StackName}-ECSCluster'
-  
+  ASG:
+    Description: The ID of the Auto Scaling Group
+    Value: !Ref ASG
+    Export:
+      Name: !Sub '${AWS::StackName}-ASG'
+      
   SG:
     Description: The name of the ECS cluster
     Value: !Ref SG

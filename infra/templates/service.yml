@@ -10,7 +10,7 @@ Parameters:
     Description: The name of the parent ECS cluster stack.
   ImageRepository:
     Type: String
-    Description: The URI of the ECR repository for the auth service.
+    Description: The URI of the ECR repository for the service.
   PathPattern:
     Type: String
     Description: The path pattern for the auth service.
@@ -35,11 +35,33 @@ Parameters:
     Type: Number
     Description: The amount (in MiB) of memory used by the task.
     Default: 512
-  # ECSTaskExecutionRole:
-  #   Type: String
-  #   Description: The IAM role assumed by Amazon ECS container agent.
 
 Resources:
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AuthServiceTaskExecutionRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+      - PolicyName: SSMParameterAccess
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameters
+                - ssm:GetParameter
+              Resource: arn:aws:ssm:eu-west-1:970547356413:parameter/devfolio/*
+
+
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -47,7 +69,7 @@ Resources:
       Protocol: HTTP
       Port: 80
       VpcId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-VPC'}
-      TargetType: instance  # ✅ Valid for EC2 launch type
+      TargetType: instance
 
   ListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
@@ -66,7 +88,7 @@ Resources:
     Type: AWS::ECS::TaskDefinition
     Properties:
       Family: !Sub "${ServiceName}-task"
-      ExecutionRoleArn: {'Fn::ImportValue': !Sub '${ParentClusterStack}-Role'}
+      ExecutionRoleArn: !Ref TaskExecutionRole
       RequiresCompatibilities:
         - "EC2"
       NetworkMode: bridge
@@ -102,8 +124,6 @@ Resources:
               awslogs-group: !Sub "/ecs/${AWS::StackName}-logs"
               awslogs-region: !Sub "${AWS::Region}"
               awslogs-stream-prefix: !Ref ServiceName
-
-
   Service:
     Type: AWS::ECS::Service
     Properties:

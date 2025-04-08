@@ -16,23 +16,12 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-VPC
 
-  VPCCidrBlock:
-    Type: 'AWS::EC2::VPCCidrBlock'
-    Properties:
-      AmazonProvidedIpv6CidrBlock: true
-      VpcId: !Ref VPC
-
   IGW:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-InternetGateway
-
-  EgressOnlyInternetGateway:
-    Type: 'AWS::EC2::EgressOnlyInternetGateway'
-    Properties:
-      VpcId: !Ref VPC
 
   VPCGatewayAttachment:
     Type: 'AWS::EC2::VPCGatewayAttachment'
@@ -47,14 +36,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-PublicRouteTable
-  
-  PrivateRT:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-PrivateRouteTable
 
   PublicRouteIgw:
     Type: AWS::EC2::Route
@@ -63,79 +44,8 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGW
       RouteTableId: !Ref PublicRT
-
-  PublicRouteEgressIgw:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationIpv6CidrBlock: ::/0
-      EgressOnlyInternetGatewayId: !Ref EgressOnlyInternetGateway
-      RouteTableId: !Ref PublicRT
-
-  PrivateRouteEgressIgw:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationIpv6CidrBlock: ::/0
-      EgressOnlyInternetGatewayId: !Ref EgressOnlyInternetGateway
-      RouteTableId: !Ref PrivateRT
-
-  PublicNAcl:
-    Type: 'AWS::EC2::NetworkAcl'
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-      - Key: Name
-        Value: Public
-
-  PublicNAclEntryInAllowAll:
-    Type: 'AWS::EC2::NetworkAclEntry'
-    Properties:
-      NetworkAclId: !Ref PublicNAcl
-      RuleNumber: 99
-      Protocol: -1
-      RuleAction: allow
-      Egress: false
-      CidrBlock: '0.0.0.0/0'
-
-  PublicNAclEntryOutAllowAll:
-    Type: 'AWS::EC2::NetworkAclEntry'
-    Properties:
-      NetworkAclId: !Ref PublicNAcl
-      RuleNumber: 99
-      Protocol: -1
-      RuleAction: allow
-      Egress: true
-      CidrBlock: '0.0.0.0/0'
-
-  PrivateNAcl:
-    Type: 'AWS::EC2::NetworkAcl'
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-      - Key: Name
-        Value: Private
-
-  # PrivateNAclEntryOutAllowAll:
-  #   Type: 'AWS::EC2::NetworkAclEntry'
-  #   Properties:
-  #     NetworkAclId: !Ref NetworkAclPrivate
-  #     RuleNumber: 99
-  #     Protocol: -1
-  #     RuleAction: allow
-  #     Egress: true
-  #     CidrBlock: '0.0.0.0/0'
-
-  PrivateNAclEntryOutAllowAllIPv6:
-    Type: 'AWS::EC2::NetworkAclEntry'
-    Properties:
-      NetworkAclId: !Ref PrivateNAcl
-      RuleNumber: 98
-      Protocol: -1
-      RuleAction: allow
-      Egress: true
-      Ipv6CidrBlock: '::/0'
-
+  
   PublicSubnet1:
-    DependsOn: VPCCidrBlock
     Type: 'AWS::EC2::Subnet'
     Properties:
       AvailabilityZone: !Select [0, !GetAZs '']
@@ -154,41 +64,7 @@ Resources:
       RouteTableId: !Ref PublicRT
       SubnetId: !Ref PublicSubnet1
 
-  PublicSubnet1NAclAssociation:
-    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
-    Properties:
-      SubnetId: !Ref PublicSubnet1
-      NetworkAclId: !Ref PublicNAcl
-
-  PrivateSubnet1:
-    DependsOn: VPCCidrBlock
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      AssignIpv6AddressOnCreation: false
-      AvailabilityZone: !Select [0, !GetAZs '']
-      CidrBlock: !Sub '10.${ClassB}.16.0/20'
-      Ipv6CidrBlock: !Select [1, !Cidr [!Select [0, !GetAtt 'VPC.Ipv6CidrBlocks'], 4, 64]]
-      VpcId: !Ref VPC
-      Tags:
-      - Key: Name
-        Value: !Sub ${AWS::StackName}-PrivateSubnet1
-      - Key: Reach
-        Value: private
-  
-  PrivateSubnet1RTA:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRT
-      SubnetId: !Ref PrivateSubnet1
-
-  PrivateSubnet1NAclAssociation:
-      Type: 'AWS::EC2::SubnetNetworkAclAssociation'
-      Properties:
-        SubnetId: !Ref PrivateSubnet1
-        NetworkAclId: !Ref PrivateNAcl
-
   PublicSubnet2:
-    DependsOn: VPCCidrBlock
     Type: 'AWS::EC2::Subnet'
     Properties:
       AvailabilityZone: !Select [1, !GetAZs '']
@@ -206,25 +82,42 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRT
       SubnetId: !Ref PublicSubnet2
+   
+  PrivateRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-PrivateRouteTable
 
-  PublicSubnet2NAclAssociation:
-      Type: 'AWS::EC2::SubnetNetworkAclAssociation'
-      Properties:
-        SubnetId: !Ref PublicSubnet2
-        NetworkAclId: !Ref PublicNAcl
-
-  PrivateSubnet2:
-    DependsOn: VPCCidrBlock
+  PrivateSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      AssignIpv6AddressOnCreation: false
-      AvailabilityZone: !Select [1, !GetAZs '']
-      CidrBlock: !Sub '10.${ClassB}.48.0/20'
-      Ipv6CidrBlock: !Select [3, !Cidr [!Select [0, !GetAtt 'VPC.Ipv6CidrBlocks'], 4, 64]]
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Sub '10.${ClassB}.16.0/20'
       VpcId: !Ref VPC
       Tags:
       - Key: Name
         Value: !Sub ${AWS::StackName}-PrivateSubnet1
+      - Key: Reach
+        Value: private
+  
+  PrivateSubnet1RTA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRT
+      SubnetId: !Ref PrivateSubnet1
+  
+  PrivateSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs '']
+      CidrBlock: !Sub '10.${ClassB}.48.0/20'
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-PrivateSubnet2
       - Key: Reach
         Value: private
   
@@ -233,45 +126,117 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRT
       SubnetId: !Ref PrivateSubnet2
-
-  PrivateSubnet2NAclAssociation:
-    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+  
+  VPCGatewayEndpointS3:
+    Type: AWS::EC2::VPCEndpoint
     Properties:
-      SubnetId: !Ref PrivateSubnet2
-      NetworkAclId: !Ref PrivateNAcl
-      
-  DBSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Sub '10.${ClassB}.64.0/20'
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      RouteTableIds:
+        - !Ref PrivateRT
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !GetAZs '']
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-DBSubnet1
+      VpcEndpointType: Gateway
 
-  DBSubnet1RTA:
-    Type: AWS::EC2::SubnetRouteTableAssociation
+  VPCEndpointECS:
+    Type: AWS::EC2::VPCEndpoint
     Properties:
-      RouteTableId: !Ref PrivateRT
-      SubnetId: !Ref DBSubnet1
-
-  DBSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Sub '10.${ClassB}.80.0/20'
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecs
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs '']
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-DBSubnet2
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
 
-  DBSubnet2RTA:
-    Type: AWS::EC2::SubnetRouteTableAssociation
+  VPCEndpointECSAgent:
+    Type: AWS::EC2::VPCEndpoint
     Properties:
-      RouteTableId: !Ref PrivateRT
-      SubnetId: !Ref DBSubnet2
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecs-agent
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
 
+  VPCEndpointECSTelemetry:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecs-telemetry
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  VPCEndpointSSMParameter:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  VPCEndpointECR:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  VPCEndpointECRDkr:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  VPCEndpointLogs:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      SubnetIds:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      SecurityGroupIds:
+        - !Ref EndpointSG
+      VpcId: !Ref VPC
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: true
+
+  EndpointSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Endpoint SG
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Sub '10.${ClassB}.0.0/16'
 Outputs:
   Vpc:
     Value: !Ref VPC
@@ -289,9 +254,3 @@ Outputs:
     Value: !Join [',', [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
     Export:
       Name: !Sub '${AWS::StackName}-PrivateSubnets'
-  
-  DBSubnets:
-    Description: 'Database Subnets'
-    Value: !Join [',', [!Ref DBSubnet1, !Ref DBSubnet2]]
-    Export:
-      Name: !Sub '${AWS::StackName}-DBSubnets'

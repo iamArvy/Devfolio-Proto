@@ -6,6 +6,9 @@ on:
       APP_NAME:
         required: true
         type: string
+      AWS_REGION:
+        required: true
+        type: string
     secrets:
       AWS_ROLE:
         required: true
@@ -37,15 +40,11 @@ jobs:
       - name: Build Nest App
         run: npm run build ${{ inputs.APP_NAME }}
 
-      # - name: Create .env File
-      #   run: |
-      #     [ -f .env ] || cp .env.example .env
-
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE }}
-          aws-region: eu-north-1
+          aws-region: ${{ inputs.AWS_REGION }}
           mask-aws-account-id: 'true'
 
       - name: Login to Amazon ECR
